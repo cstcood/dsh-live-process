@@ -8,7 +8,7 @@
 
 ### Unfold the process the moment it happens
 
-![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![npm](https://img.shields.io/npm/v/@cstcood/dsh-live-process?color=cb3837&label=npm)![Downloads](https://img.shields.io/npm/dm/@cstcood/dsh-live-process?color=cb3837&label=downloads)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![npm](https://img.shields.io/npm/v/@cstcood/dsh-live-process?color=cb3837&label=npm)![Size](https://img.shields.io/npm/unpacked-size/@cstcood/dsh-live-process?color=cb3837&label=size)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
