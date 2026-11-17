@@ -3,6 +3,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Build output from `npm pack`
+*.tgz
+
 # Probe runtime data (regenerated locally, never committed)
 docs/probe-events.jsonl
 docs/timers.json

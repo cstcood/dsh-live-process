@@ -219,6 +219,24 @@ python docs/make-shots.py
 
 `client.js` is the browser module, registered through `window.__ModuleLoader__.load({ id, factory })`. `index.js` is the Host entry point; this plugin needs no Host-side logic, so `apply()` is empty.
 
+### Releasing
+
+A push to `main` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml):
+
+1. read `version` from `package.json`;
+2. if the remote has no `v<version>` tag yet, take that version's section from `CHANGELOG.md` as the release notes, create the tag and the GitHub release;
+3. run `npm publish --provenance` when `NPM_TOKEN` is configured.
+
+So a release is three edits — `VERSION` in `client.js`, `version` in `package.json`, and a new `CHANGELOG.md` section — then commit and push. If the version did not change the whole flow short-circuits, so an empty commit never mints a second release.
+
+`NPM_TOKEN` must be a Granular Access Token with **Bypass 2FA** enabled: with two-factor auth on the account, an ordinary token fails with `403 Two-factor authentication ... is required`.
+
+You can also run it by hand:
+
+```bash
+gh workflow run release.yml -f force=true
+```
+
 ## 📄 License
 
 [MIT](LICENSE) © 2026 cstcood

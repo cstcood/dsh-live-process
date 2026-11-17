@@ -219,6 +219,24 @@ python docs/make-shots.py
 
 `client.js` 是浏览器端模块，通过 `window.__ModuleLoader__.load({ id, factory })` 注册；`index.js` 是 Host 端入口，本插件不需要 Host 侧逻辑，`apply()` 为空。
 
+### 发布
+
+推送到 `main` 即触发 [`.github/workflows/release.yml`](.github/workflows/release.yml)：
+
+1. 读 `package.json` 的 `version`；
+2. 若远端还没有 `v<version>` 标签，就从 `CHANGELOG.md` 抽出该版本小节当作 release notes，打标签、建 GitHub Release；
+3. 配了 `NPM_TOKEN` 就顺带 `npm publish --provenance`。
+
+所以发版只要改三处——`client.js` 的 `VERSION`、`package.json` 的 `version`、`CHANGELOG.md` 加一节——然后 commit + push。版本号没变时整条流程自动跳过，空提交不会多发一个 release。
+
+`NPM_TOKEN` 必须是带 **Bypass 2FA** 的 Granular Access Token：npm 账号开了双因素认证后，普通 token 发布会返回 `403 Two-factor authentication ... is required`。
+
+也可以手动跑：
+
+```bash
+gh workflow run release.yml -f force=true
+```
+
 ## 📄 协议
 
 [MIT](LICENSE) © 2026 cstcood

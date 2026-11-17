@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Re-create the release and re-publish even if the tag already exists
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+
+      - name: Read version and tag state
+        id: meta
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version already tagged; skipping release"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version is new; release will be created"
+          fi
+
+      - name: Verify the client module parses
+        run: node --check client.js || node -e "new Function(require('node:fs').readFileSync('client.js','utf8'))"
+
+      - name: Extract the changelog section
+        if: steps.meta.outputs.exists == 'false' || inputs.force
+        run: node .github/scripts/changelog-section.mjs "${{ steps.meta.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+
+      - name: Create tag and GitHub release
+        if: steps.meta.outputs.exists == 'false' || inputs.force
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --verify-tag
+
+      - name: Publish to npm
+        if: (steps.meta.outputs.exists == 'false' || inputs.force) && env.NODE_AUTH_TOKEN != ''
+        run: npm publish --access public --provenance
+
+      - name: Note the skipped npm publish
+        if: (steps.meta.outputs.exists == 'false' || inputs.force) && env.NODE_AUTH_TOKEN == ''
+        run: |
+          echo "::notice::NPM_TOKEN is not configured; skipped npm publish. Add a Granular Access Token with Bypass 2FA as the NPM_TOKEN secret to enable it."
