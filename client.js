@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.2';
+    const VERSION = '1.6.3';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -504,6 +504,8 @@ window.__ModuleLoader__.load({
 
     const SETTINGS_CSS = `
 .dte-page { display: flex; flex-direction: column; gap: 12px; padding: 2px 0 28px; }
+.dte-stamp { font-size: 11px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
+.dte-stack { margin: 0; padding: 8px 10px; border-radius: 6px; background: var(--dsw-alias-bg-module-platform); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--dsw-alias-label-secondary); max-height: 180px; overflow: auto; }
 .dte-card {
   border: 0.5px solid var(--dsw-alias-border-l4);
   border-radius: 10px;
@@ -919,25 +921,128 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /**
+     * The settings page is the one surface where a render error blanks the whole
+     * panel with no clue why. Hooks stay at the top level so the hook count never
+     * changes between renders; only the tree build is guarded, and a thrown error
+     * becomes a readable message plus a one-click reset instead of an empty page.
+     */
     function Page() {
       const [current, setCurrent] = React.useState(config);
-      const [uiScheme, setUiScheme] = React.useState(detectScheme);
+      const [uiScheme, setUiScheme] = React.useState(safeDetect);
       React.useEffect(() => subscribe(() => setCurrent({ ...config })), []);
       React.useEffect(() => {
         const id = setInterval(() => {
-          const next = detectScheme();
+          const next = safeDetect();
           setUiScheme(prev => (prev === next ? prev : next));
         }, 600);
         return () => clearInterval(id);
       }, []);
-      const [census, setCensus] = React.useState(sampleRows);
+      const [census, setCensus] = React.useState(safeCensus);
       React.useEffect(() => {
-        const id = setInterval(() => setCensus(sampleRows()), 800);
+        const id = setInterval(() => setCensus(safeCensus()), 800);
         return () => clearInterval(id);
       }, []);
 
+      try {
+        return h(Boundary, null, pageTree(current, uiScheme, census));
+      } catch (error) {
+        return pageError(error);
+      }
+    }
+
+    /**
+     * Catches a throw from a child component (a block card, a preview row) that
+     * the try/catch above cannot see, because React renders children later.
+     */
+    class Boundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { error: null };
+      }
+
+      static getDerivedStateFromError(error) {
+        return { error };
+      }
+
+      render() {
+        if (this.state.error !== null) return pageError(this.state.error);
+        return this.props.children;
+      }
+    }
+
+    function safeDetect() {
+      try {
+        return detectScheme();
+      } catch {
+        return 'dark';
+      }
+    }
+
+    function safeCensus() {
+      try {
+        return sampleRows();
+      } catch {
+        return {
+          think: 0,
+          thinkOpen: 0,
+          tool: 0,
+          toolOpen: 0,
+          toolRunning: 0,
+          toolPreparing: 0,
+          toolExpandable: 0,
+          command: 0,
+          context: 0,
+          pinned: false,
+          jumps: 0,
+        };
+      }
+    }
+
+    function pageError(error) {
+      const message = error && error.message ? error.message : String(error);
+      const stack =
+        error && typeof error.stack === 'string'
+          ? error.stack.split('\n').slice(0, 8).join('\n')
+          : '';
+      return h(
+        'div',
+        { className: 'dte-page' },
+        h(
+          'section',
+          { className: 'dte-card' },
+          h(
+            'div',
+            { className: 'dte-card-pad' },
+            h('span', { className: 'dte-group-title' }, '过程块样式渲染失败'),
+            h('p', { className: 'dte-hint' }, `v${VERSION} · ${message}`),
+            stack !== ''
+              ? h('pre', { className: 'dte-stack' }, stack)
+              : null,
+            h(
+              'p',
+              { className: 'dte-hint' },
+              '先点下面的按钮清掉本插件存在这个浏览器里的配置并刷新页面。如果仍然失败，把上面这段文字反馈给插件作者。',
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dte-reset',
+                onClick: () => {
+                  resetAll();
+                },
+              },
+              '清除配置并恢复默认',
+            ),
+          ),
+        ),
+      );
+    }
+
+    function pageTree(current, uiScheme, census) {
       const target = current.schemeMode === 'auto' ? uiScheme : current.schemeMode;
-      const scheme = current.schemes[target];
+      const scheme = current.schemes[target] ?? current.schemes.dark;
 
       const patchScheme = patch => {
         update({ schemes: { [target]: { ...scheme, ...patch } } });
@@ -957,6 +1062,11 @@ window.__ModuleLoader__.load({
       return h(
         'div',
         { className: 'dte-page' },
+        h(
+          'div',
+          { className: 'dte-stamp' },
+          `v${VERSION} · ${schemeLabel} · ${BLOCK_DEFS.length} 类块 · 配置存于本浏览器`,
+        ),
         h(
           'section',
           { className: 'dte-card' },
