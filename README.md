@@ -8,11 +8,11 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.5-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.6-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
-> **当前版本 `1.6.5`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
+> **当前版本 `1.6.6`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
 > 不接管渲染，只驱动上游自己的展开控件——所以升级 DSH 后通常无需改插件。
 
 </div>
@@ -66,7 +66,7 @@ plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.6.5"
+    "@cstcood/dsh-live-process": "^1.6.6"
   }
 }
 ```

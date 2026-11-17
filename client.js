@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.5';
+    const VERSION = '1.6.6';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -1440,12 +1440,13 @@ window.__ModuleLoader__.load({
         let frame = 0;
 
         function control(row) {
-          // Only the disclosure control itself: a bare `button` fallback can land
-          // on a row's file/URL link and open it instead of expanding the row.
+          // Only the disclosure row itself. A loose `[aria-expanded]` or
+          // `[role="button"]` fallback lands on whatever comes first inside the
+          // row — and a read or edit row leads with its file path, which is a
+          // link. Clicking that opens the file and leaves the row collapsed, so
+          // the row looks unexpandable while the click quietly went elsewhere.
           return row.querySelector('[data-disclosure-row][aria-expanded]')
-            ?? row.querySelector('[data-disclosure-row][role="button"]')
-            ?? row.querySelector('[aria-expanded]')
-            ?? row.querySelector('[role="button"]');
+            ?? row.querySelector('[data-disclosure-row][role="button"]');
         }
 
         function scrollerOf(row) {
@@ -1558,6 +1559,19 @@ window.__ModuleLoader__.load({
         // on the next sweep they would look like brand-new rows and be stamped
         // with a meaningless 0ms.
         const historic = new WeakSet();
+        // The chat flow virtualizes: scrolling a row out of view unmounts it and
+        // scrolling back mounts a brand-new element. Keyed by the chat anchor that
+        // survives the remount, so a row keeps its measured window instead of
+        // looking like a fresh one with no start.
+        const keyedStart = new Map();
+        const keyedSettled = new Map();
+        const keyedHistoric = new Set();
+
+        function anchorOf(row) {
+          const hosted = row.closest('[data-chat-anchor-key]');
+          const anchor = hosted === null ? null : hosted.getAttribute('data-chat-anchor-key');
+          return anchor === null || anchor === '' ? null : anchor;
+        }
 
         function formatElapsed(ms) {
           if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -1580,7 +1594,9 @@ window.__ModuleLoader__.load({
 
         function tickTimer(row, def) {
           if (!config.showTimer) return;
-          if (historic.has(row)) {
+          const anchor = anchorOf(row);
+          const known = anchor === null ? historic.has(row) : keyedHistoric.has(anchor);
+          if (known) {
             const header = row.querySelector('[data-disclosure-header]');
             const stale = header === null ? null : header.querySelector(':scope > .dte-timer');
             if (stale !== null) stale.remove();
@@ -1591,26 +1607,29 @@ window.__ModuleLoader__.load({
           // the verdict whenever it has one.
           const state = row.getAttribute('data-state');
           const live = def !== undefined ? def.live(row) : state === 'running' || state === 'preparing';
-          let start = startedAt.get(row);
+          let start = anchor === null ? startedAt.get(row) : keyedStart.get(anchor);
           if (start === undefined) {
             // A row first seen already settled has no observable start: the work
             // happened before the plugin was watching. Remember it as history and
             // show nothing rather than a made-up 0ms.
             if (!live) {
-              historic.add(row);
+              if (anchor === null) historic.add(row);
+              else keyedHistoric.add(anchor);
               return;
             }
             start = Date.now();
-            startedAt.set(row, start);
+            if (anchor === null) startedAt.set(row, start);
+            else keyedStart.set(anchor, start);
           }
           let elapsed;
           if (live) {
             elapsed = Date.now() - start;
           } else {
-            let end = settledAt.get(row);
+            let end = anchor === null ? settledAt.get(row) : keyedSettled.get(anchor);
             if (end === undefined) {
               end = Date.now();
-              settledAt.set(row, end);
+              if (anchor === null) settledAt.set(row, end);
+              else keyedSettled.set(anchor, end);
             }
             elapsed = end - start;
           }
@@ -1744,8 +1763,10 @@ window.__ModuleLoader__.load({
             for (const { def, rows } of collected) {
               if (!def.timed) continue;
               for (const row of rows) {
-                const state = row.getAttribute('data-state');
-                if (state !== 'running' && state !== 'preparing') historic.add(row);
+                if (def.live(row)) continue;
+                const anchor = anchorOf(row);
+                if (anchor === null) historic.add(row);
+                else keyedHistoric.add(anchor);
               }
             }
           }
