@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.4.0';
+    const VERSION = '1.4.1';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -52,24 +52,6 @@ window.__ModuleLoader__.load({
 
     // ------------------------------------------------------------- block kinds
 
-    /** Resolve the row root that owns a marker element's disclosure control. */
-    function resolveByMarker(selector) {
-      const out = [];
-      for (const marker of document.querySelectorAll(selector)) {
-        let node = marker.parentElement;
-        let found = null;
-        for (let depth = 0; depth < 4 && node !== null && node !== document.body; depth += 1) {
-          if (node.querySelector('[aria-expanded], button') !== null) {
-            found = node;
-            break;
-          }
-          node = node.parentElement;
-        }
-        if (found !== null) out.push(found);
-      }
-      return out;
-    }
-
     /** Whether any process row in the transcript is still producing. */
     function anyLive() {
       return document.querySelector(
@@ -78,6 +60,26 @@ window.__ModuleLoader__.load({
         + ' [data-tool][data-state="preparing"],'
         + ' [data-variant="others"][data-state="running"]',
       ) !== null;
+    }
+
+    /**
+     * A context injection carries no running state of its own: it arrives fully
+     * formed and never changes again, so there is nothing to poll for "still
+     * producing". Treat a row as live for a short window after it first shows
+     * up instead — it opens on arrival and folds itself once the window closes.
+     */
+    const CONTEXT_LIVE_MS = 3000;
+    const firstSeen = new WeakMap();
+    let primed = false;
+
+    function contextLive(row) {
+      const seen = firstSeen.get(row);
+      if (seen === undefined) {
+        // Rows already on screen when the driver starts are history, not news.
+        firstSeen.set(row, primed ? Date.now() : 0);
+        return primed;
+      }
+      return Date.now() - seen < CONTEXT_LIVE_MS;
     }
 
     const BLOCK_DEFS = [
@@ -133,8 +135,14 @@ window.__ModuleLoader__.load({
         light: { color: '#2a6fb0', bg: 7 },
         on: true,
         foldable: true,
-        rows: () => resolveByMarker('[data-context-injection-body]'),
-        live: () => anyLive(),
+        // The injection body only exists while the row is open, so it cannot be
+        // used to find the row: a collapsed row would never be discovered and
+        // therefore never opened. Locate the seat by node kind instead, then take
+        // the disclosure root inside it.
+        rows: () => [...document.querySelectorAll('[data-chat-flow-kind="context"]')]
+          .map(seat => seat.querySelector('[data-disclosure-header]')?.parentElement ?? null)
+          .filter(row => row !== null),
+        live: row => contextLive(row),
       },
       {
         key: 'compaction',
@@ -1295,11 +1303,11 @@ window.__ModuleLoader__.load({
             const override = config.modes[def.key];
             const blockMode = override === 'inherit' ? config.foldMode : override;
             if (blockMode === 'off') continue;
-            // Context injections accumulate one row per injection; only the newest
-            // one belongs to the turn that is still producing.
-            const targets = def.key === 'context' && rows.length > 1 ? rows.slice(-1) : rows;
-            for (const row of targets) driveRow(row, def, blockMode);
+            for (const row of rows) driveRow(row, def, blockMode);
           }
+          // Everything on screen at start-up is history; only rows that appear
+          // afterwards count as freshly injected.
+          primed = true;
         }
 
         function schedule() {
@@ -1338,10 +1346,16 @@ window.__ModuleLoader__.load({
 
           schedule();
 
+          // A context row's live window expires on a clock rather than on a DOM
+          // change, so poll while the transcript is otherwise idle to let the
+          // row fold itself once the window closes.
+          const tick = setInterval(schedule, 1000);
+
           return () => {
             off();
             observer.disconnect();
             themeObserver.disconnect();
+            clearInterval(tick);
             if (frame !== 0) cancelAnimationFrame(frame);
             frame = 0;
             for (const timer of timers) clearTimeout(timer);

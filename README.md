@@ -8,7 +8,7 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
@@ -157,15 +157,19 @@ DSH 的 Chat 与 Tool 包自己持有展开状态，并且明确不对外暴露�
 | `[data-tool]` + `data-state` | `ToolRow.tsx` | 工具行，`preparing` / `running` / `ok` / `error` / `stopped` |
 | `[data-disclosure-header]` 父节点的 `data-open` | `DisclosureRow` | 展开状态，**唯一不依赖 `expandable` 的信号** |
 | `[data-disclosure-row][aria-expanded]` | `DisclosureRow` | 展开控件，`expandable` 为假时整个属性不存在 |
-| `[data-context-injection-body]` | `ContextInjectionRow.tsx` | 上下文注入正文 |
+| `[data-chat-flow-kind="context"]` | `ChatNodeSeat.tsx` | 上下文注入节点座位，**折叠时也存在** |
+| `[data-context-injection-body]` | `ContextInjectionRow.tsx` | 上下文注入正文，**只在展开后渲染** |
 | `[data-compaction-disclosure]` | `CompactionItem.tsx` | 压缩标记 |
 | `[data-turn-process]` | `TurnProcessNodeView.tsx` | 过程组节点 |
 
-驱动逻辑有三条硬约束，都是踩过的坑：
+驱动逻辑有四条硬约束，都是踩过的坑：
 
 1. **每 `(行, data-state, 意图)` 只点一次。** 展开控件的 `open` 是 `expanded && expandable`，行还不能展开时点完仍然报告「关闭」；如果校验失败就重试，第二次点击会把刚置位的 `expanded` 点回去，来回抖动。
 2. **找不到控件时不记录「已处理」。** 工具行在 `preparing` 阶段 `expandable` 为假，`aria-expanded`、`role="button"`、`onClick` 全都不存在。此时放弃并等下一帧，等行自己长到 `running` 再点。
-3. **展开后补滚到底。** 在尾部上方展开一行会让内容变高，浏览器的 scroll anchoring 把视口顶离底部，DSH 的 `ScrollFollow` 会把这当成「读者自己滚了」而停止跟随。插件在点击后 60 / 220 / 520ms 三个时间点把 `scrollTop` 拉回底部，一旦收到 `wheel` / `touchmove` 立刻取消。
+3. **不能用「展开后才存在」的节点定位行。** 上下文注入正文 `[data-context-injection-body]` 只在展开时渲染，用它找行会形成「要展开才能被找到、要被找到才能展开」的死循环。改用节点座位 `[data-chat-flow-kind="context"]` 定位，再取其中的 disclosure 根。
+4. **展开后补滚到底。** 在尾部上方展开一行会让内容变高，浏览器的 scroll anchoring 把视口顶离底部，DSH 的 `ScrollFollow` 会把这当成「读者自己滚了」而停止跟随。插件在点击后 60 / 220 / 520ms 三个时间点把 `scrollTop` 拉回底部，一旦收到 `wheel` / `touchmove` 立刻取消。
+
+上下文注入没有 `data-state`——它到达时就是完整的，之后不再变化。插件把它「出现后 3 秒内」视为运行中：到达即展开，窗口结束自动折叠。为此驱动带一个 1 秒轮询，空闲时也能让窗口过期。
 
 ## ⚠️ 已知限制
 

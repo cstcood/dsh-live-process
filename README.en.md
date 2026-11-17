@@ -8,7 +8,7 @@
 
 ### Unfold the process the moment it happens
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
@@ -157,15 +157,19 @@ The DOM contract it relies on (from upstream source):
 | `[data-tool]` + `data-state` | `ToolRow.tsx` | Tool row, `preparing` / `running` / `ok` / `error` / `stopped` |
 | `data-open` on the parent of `[data-disclosure-header]` | `DisclosureRow` | Open state — **the only signal that does not depend on `expandable`** |
 | `[data-disclosure-row][aria-expanded]` | `DisclosureRow` | The control; the whole attribute is absent while `expandable` is false |
-| `[data-context-injection-body]` | `ContextInjectionRow.tsx` | Context injection body |
+| `[data-chat-flow-kind="context"]` | `ChatNodeSeat.tsx` | Context injection seat — **present while collapsed** |
+| `[data-context-injection-body]` | `ContextInjectionRow.tsx` | Context injection body — **rendered only while open** |
 | `[data-compaction-disclosure]` | `CompactionItem.tsx` | Compaction marker |
 | `[data-turn-process]` | `TurnProcessNodeView.tsx` | Process group node |
 
-Three hard constraints in the driver, each learned the hard way:
+Four hard constraints in the driver, each learned the hard way:
 
 1. **Click once per `(row, data-state, intent)`.** The control's `open` is `expanded && expandable`; clicking a row that cannot expand yet still reports "closed". Retrying on that mismatch clicks a second time and flips the `expanded` you just set back off — visible flicker.
 2. **Never record "handled" when no control exists.** During `preparing`, a tool row has `expandable` false, so `aria-expanded`, `role="button"` and `onClick` are all absent. Give up and wait for the next frame, then click once the row reaches `running`.
-3. **Re-pin the scroll after expanding.** Expanding a row above the tail grows the content, browser scroll anchoring pushes the viewport off the bottom, and DSH's `ScrollFollow` reads that as "the reader scrolled" and stops following. The plugin pulls `scrollTop` back to the bottom at 60 / 220 / 520 ms after the click, and cancels immediately on `wheel` / `touchmove`.
+3. **Never locate a row by a node that only exists while open.** The injection body `[data-context-injection-body]` renders only when the row is open, so using it to find rows deadlocks: the row must be open to be found, and must be found to be opened. Locate the seat by `[data-chat-flow-kind="context"]` and take the disclosure root inside it.
+4. **Re-pin the scroll after expanding.** Expanding a row above the tail grows the content, browser scroll anchoring pushes the viewport off the bottom, and DSH's `ScrollFollow` reads that as "the reader scrolled" and stops following. The plugin pulls `scrollTop` back to the bottom at 60 / 220 / 520 ms after the click, and cancels immediately on `wheel` / `touchmove`.
+
+A context injection has no `data-state`: it arrives complete and never changes again. The plugin treats it as live for 3 seconds after it first appears — it opens on arrival and folds itself when the window closes. The driver therefore polls once a second so the window can expire while the transcript is idle.
 
 ## ⚠️ Known limitations
 

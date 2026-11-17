@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1
+
+- 修复上下文注入行不自动展开：原来用 `[data-context-injection-body]` 定位行，而该节点只在展开后才渲染，折叠行永远找不到，形成「要展开才能被找到、要被找到才能展开」的死循环。改为按 `[data-chat-flow-kind="context"]` 定位节点座位，再取其中的 disclosure 根。
+- 上下文注入没有运行态，改用「出现后 3 秒内视为运行中」的窗口：到达即展开，窗口结束自动折叠。驱动因此加了 1 秒轮询，空闲时也能让窗口过期。
+- 移除不再使用的 `resolveByMarker`。
+
 ## 1.4.0
 
 - 更名为 **dsh-live-process**（包名 `@cstcood/dsh-live-process`）：原 `dsh-think-expand` 与 npm 上 BrianHIO-x 的同名插件冲突。模块 id、bundle id、设置页 slot id 同步改名；`localStorage` 键由 `dsh-think-expand:config` 变为 `dsh-live-process:config`，旧配置不再读取，首次打开为默认值。
