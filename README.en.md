@@ -17,7 +17,19 @@
 
 </div>
 
-DSH collapses every process row into a one-line summary, and while a turn is running all you see is "thinking…". This plugin unfolds each process row the moment it appears and folds it back when it settles — you watch the work happen instead of waiting for a conclusion.
+DSH collapses every process row into a one-line summary, and while a turn is running all you see is "thinking…". This plugin unfolds each process row the moment it appears and folds it back when it settles.
+
+## 🌱 Why this exists
+
+Let me be blunt about the motivation.
+
+Using [pi-web](https://github.com/agegr/pi-web), it was the first time "the agent is working" felt *visible*: thinking is a block of prose that grows, a tool call is a card with its input and output, each one folds away when it settles, and the whole timeline reads like a construction log you can go back through.
+
+Going back to DSH's built-in reasoning UI felt like the opposite — it hands you a "thinking…" shell and nothing else. When the model drops into a long, deep deliberation, nothing on screen moves except that one line: you cannot see what it is weighing, where it is stuck, or whether it has already talked itself in a circle. **An invisible process is no process at all** — by the time the conclusion lands, you have lost every basis for judging whether it is any good.
+
+So this is not "a toggle for DSH". It is **unfolding the process the way pi-web does**: thinking, tools, commands and context injection each become their own block, open while running, folded when settled, with configurable color, tint, font size and family. One goal — every long deliberation leaves a trace you can actually read, instead of a spinning ellipsis.
+
+> One caveat: upstream DSH deliberately does not let extensions replace the reasoning preview or the expand strategy (`dsh-client-ui-chat/README.zh.md`). So this plugin does not take over rendering — it drives upstream's own disclosure controls. See [How it works](#-how-it-works).
 
 ![Process blocks in the dark theme](docs/screenshots/transcript-dark.png)
 
