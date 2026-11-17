@@ -8,7 +8,7 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 

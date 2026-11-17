@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.5.0';
+    const VERSION = '1.5.1';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -1267,25 +1267,56 @@ window.__ModuleLoader__.load({
           return element.scrollHeight - element.clientHeight - element.scrollTop <= 24;
         }
 
+        const SCROLL_KEYS = new Set(['PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', 'Home', 'End', ' ']);
+
         /**
-         * Expanding a row above the tail grows the content under a reader who was
-         * pinned to the floor; the browser's scroll anchoring then leaves the
-         * viewport short of the tail and the follow controller reads that as the
-         * reader leaving. Re-pin for a short window, and stand down the moment the
-         * reader scrolls on their own.
+         * The upstream follow controller stops following the moment it samples a
+         * scroll it did not perform, and expanding a row above the tail produces
+         * exactly that: scroll anchoring shifts `scrollTop`, the controller reads
+         * it as the reader leaving, and the tail is abandoned for the rest of the
+         * turn. So the pin is owned here instead. It survives content growth and
+         * only a real reader gesture releases it.
          */
-        function holdTail(scroller) {
-          let cancelled = false;
-          const cancel = () => {
-            cancelled = true;
+        const pinStates = new WeakMap();
+
+        function pinStateOf(scroller) {
+          const known = pinStates.get(scroller);
+          if (known !== undefined) return known;
+          const state = { pinned: atBottom(scroller), programmatic: false };
+          pinStates.set(scroller, state);
+          scroller.addEventListener('scroll', () => {
+            if (state.programmatic) {
+              state.programmatic = false;
+              return;
+            }
+            state.pinned = atBottom(scroller);
+          }, { passive: true });
+          const release = () => {
+            state.pinned = false;
           };
-          scroller.addEventListener('wheel', cancel, { passive: true, once: true });
-          scroller.addEventListener('touchmove', cancel, { passive: true, once: true });
+          scroller.addEventListener('wheel', release, { passive: true });
+          scroller.addEventListener('touchmove', release, { passive: true });
+          scroller.addEventListener('keydown', (event) => {
+            if (SCROLL_KEYS.has(event.key)) state.pinned = false;
+          });
+          return state;
+        }
+
+        function pinToBottom(scroller) {
+          if (scroller === null || !scroller.isConnected) return;
+          const state = pinStateOf(scroller);
+          if (!state.pinned) return;
+          const floor = scroller.scrollHeight - scroller.clientHeight;
+          if (floor - scroller.scrollTop <= 1) return;
+          state.programmatic = true;
+          scroller.scrollTop = floor;
+        }
+
+        function holdTail(scroller) {
           for (const delay of [60, 220, 520]) {
             const timer = setTimeout(() => {
               timers.delete(timer);
-              if (cancelled || !scroller.isConnected) return;
-              scroller.scrollTop = scroller.scrollHeight;
+              pinToBottom(scroller);
             }, delay);
             timers.add(timer);
           }
@@ -1310,9 +1341,8 @@ window.__ModuleLoader__.load({
           const target = control(row);
           if (target === null) return;
           const scroller = scrollerOf(row);
-          const pinned = scroller !== null && atBottom(scroller);
           target.click();
-          if (pinned) holdTail(scroller);
+          if (scroller !== null) holdTail(scroller);
         }
 
         function driveRow(row, def, mode, isLast) {
@@ -1390,6 +1420,8 @@ window.__ModuleLoader__.load({
           // Everything on screen at start-up is history; only rows that appear
           // afterwards count as freshly injected.
           primed = true;
+          // Streaming grows the tail every frame; keep a pinned reader on it.
+          pinToBottom(document.querySelector('[data-conversation-scroll]'));
         }
 
         function schedule() {
