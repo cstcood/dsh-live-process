@@ -8,11 +8,11 @@
 
 ### Unfold the process the moment it happens
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.6-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.7.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
-> **Current version `1.6.6`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> **Current version `1.7.0`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
 > It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
 
 </div>
@@ -43,6 +43,7 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 - **🌗 Separate dark and light palettes** — the matching palette follows the UI theme automatically, or you can lock one. Each palette stores its own colors, tint strength, font size and font family.
 - **🎨 Twelve configurable block types** — thinking, tools, command cards, context injection, compaction markers, process groups, turn tails, user bubbles, running status, queue, todos, steering messages.
 - **📐 Adjustable geometry** — accent bar width, corner radius, block/inline/left padding, running tint strength, font size, font family.
+- **🖍️ Adjustable code tint** — inline code and code blocks inside process blocks use a neutral gray derived from the text color, tunable per palette, so a white slab never surfaces inside a dark block.
 - **⚡ Instant effect** — configuration lives in browser `localStorage`; no Host restart, no reinstall.
 - **⏱️ Elapsed badges** — tool rows, command cards, reasoning rows and context-injection rows show their run time after the title, ticking while running and freezing when settled. Historical rows show nothing rather than a fabricated number.
 - **🕗 Configurable fold timing** — "on next row" (default) keeps a finished row open until the next process row arrives; "on end" folds it immediately. Whether the last process row folds when the turn ends in prose is a separate switch.
@@ -66,7 +67,7 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.6.6"
+    "@cstcood/dsh-live-process": "^1.7.0"
   }
 }
 ```
@@ -118,7 +119,7 @@ Open Settings → **Process block styles**.
 | Fold rule | The four global modes, the fold timing, the last-row switch and the elapsed-badge switch, always visible |
 | Process blocks | Thinking, tools, command cards, context injection, compaction, process groups |
 | Other blocks | Turn tail, user bubble, running status, queue, todos, steering |
-| Common | Font family, running tint, bar width, radius, three paddings |
+| Common | Font family, running tint, bar width, radius, three paddings, inline-code tint, code-block tint |
 | Preview | Live rendering of every enabled block in the current palette |
 | Diagnostics | Live row counts, pin state, pull-back count and plugin version |
 
@@ -134,18 +135,19 @@ Under the `auto` mode, when a finished row folds is decided by two settings:
 | | On end | A row folds the moment it stops producing |
 | Fold the last row | Off (default) | The last process row has no successor, so it stays open |
 | | On | It folds even when nothing follows it |
-| Show elapsed | On (default) | Tool, command, reasoning and context rows carry a run-time badge after the title |
+| Show elapsed | On (default) | Tool, command and reasoning rows carry a run-time badge after the title |
 
 "Last row" means a turn that ends with assistant prose: no process row will ever follow, so `on next row` would wait forever. That is why it gets its own switch.
 
 ### Elapsed time
 
-Tool rows and command cards carry an elapsed badge after their title: it counts up while the row runs and freezes when it settles.
+Tool rows, command cards and reasoning rows carry an elapsed badge after their title: it counts up while the row runs and freezes when it settles.
 
-- The start is the moment the row first appears in the DOM (usually `preparing`); the end is when `data-state` lands on `ok` / `error` / `stopped`.
+- The start is the moment the row first appears in the DOM; the end is when it stops running. Under a second it reads `ms`, under a minute `s` with one decimal, beyond that `m` + `s`.
+- Timers are keyed by `data-chat-anchor-key`, not by DOM element. The transcript virtualizes — rows scrolled out of view are unmounted and come back as brand-new elements; anchoring the record keeps the original window, so a historical row does not read `0ms` after a round trip.
 - Rows already on screen when the page loaded get no badge — their real start is unknowable, and a made-up number is worse than none.
-- Under a second it reads `ms`, under a minute `s` with one decimal, beyond that `m` + `s`.
-- Turn it off under Settings → Process block styles → Common.
+- Context injection carries no badge: its time belongs to request construction and upstream records no start or end for it, so any number would be invented.
+- Turn it off under Settings → Process block styles → Fold rule → **Show elapsed**.
 
 ## ⚙️ Configuration
 
@@ -156,7 +158,7 @@ Tool rows and command cards carry an elapsed badge after their title: it counts 
   "foldMode": "auto",          // auto | expand | collapse | off
   "foldTiming": "onNext",      // onNext | onEnd
   "foldLast": false,           // fold the last row when nothing follows it
-  "showTimer": true,           // elapsed badge on tool rows and command cards
+  "showTimer": true,           // elapsed badge on tool, command and reasoning rows
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // per-block override, inherit follows foldMode
     "think": "inherit",
@@ -164,7 +166,7 @@ Tool rows and command cards carry an elapsed badge after their title: it counts 
   },
   "schemes": {
     "dark": {
-      "common": { "liveBg": 13, "barWidth": 3, "radius": 8, "padBlock": 7, "padInline": 12, "padLeft": 14, "fontFamily": "" },
+      "common": { "liveBg": 13, "barWidth": 3, "radius": 8, "padBlock": 7, "padInline": 12, "padLeft": 14, "codeBg": 12, "codeBlockBg": 8, "fontFamily": "" },
       "blocks": { "think": { "color": "#8b7cf6", "bg": 7, "on": true, "fontSize": 0 } }
     },
     "light": { "common": {}, "blocks": {} }
@@ -191,12 +193,13 @@ The DOM contract it relies on (from upstream source):
 | `[data-compaction-disclosure]` | `CompactionItem.tsx` | Compaction marker |
 | `[data-turn-process]` | `TurnProcessNodeView.tsx` | Process group node |
 
-Four hard constraints in the driver, each learned the hard way:
+Five hard constraints in the driver, each learned the hard way:
 
 1. **Click once per `(row, data-state, intent)`.** The control's `open` is `expanded && expandable`; clicking a row that cannot expand yet still reports "closed". Retrying on that mismatch clicks a second time and flips the `expanded` you just set back off — visible flicker.
 2. **Never record "handled" when no control exists.** During `preparing`, a tool row has `expandable` false, so `aria-expanded`, `role="button"` and `onClick` are all absent. Give up and wait for the next frame, then click once the row reaches `running`.
 3. **Never locate a row by a node that only exists while open.** The injection body `[data-context-injection-body]` renders only when the row is open, so using it to find rows deadlocks: the row must be open to be found, and must be found to be opened. Locate the seat by `[data-chat-flow-kind="context"]` and take the disclosure root inside it.
-4. **Re-pin the scroll after expanding.** Expanding a row above the tail grows the content, browser scroll anchoring pushes the viewport off the bottom, and DSH's `ScrollFollow` reads that as "the reader scrolled" and stops following. The plugin pulls `scrollTop` back to the bottom at 60 / 220 / 520 ms after the click, and cancels immediately on `wheel` / `touchmove`.
+4. **Re-pin the scroll after expanding.** Expanding a row above the tail grows the content, browser scroll anchoring pushes the viewport off the bottom, and DSH's `ScrollFollow` reads that as "the reader scrolled" and stops following. The plugin pulls `scrollTop` back to the bottom at 60 / 220 / 520 ms after the click, and cancels immediately on `wheel` / `touchmove`. It only re-pins when the viewport was already at the tail — otherwise any auto-expand would yank you back while you are reading further up.
+5. **Beating upstream's CSS Modules specificity.** Upstream row styles are `.root_x[data-variant="think"]` (0,2,0). Writing `[data-dsh-block="think"]` (0,1,0) loses every time and only `:hover` wins — which looks exactly like "it is white until I move the mouse over it". The rules now climb 0,2,0 / 0,3,0 / 0,4,0, and the open-state white header needs the deepest tier to be overridden.
 
 A context injection has no `data-state`: it arrives complete and never changes again. The plugin treats it as live for 3 seconds after it first appears — it opens on arrival and folds itself when the window closes. The driver therefore polls once a second so the window can expire while the transcript is idle.
 
@@ -204,7 +207,7 @@ A context injection has no `data-state`: it arrives complete and never changes a
 
 - Web UI only; the desktop shell and TUI do not use this render path.
 - Depends on the DOM attributes above. If upstream renames them the plugin goes quiet — the diagnostics card shows it (e.g. "tool rows > 0 but expandable = 0").
-- Cannot expand rows upstream considers non-expandable. `read-family-row.tsx` passes `bodyRaw={null}`, for instance: those rows have card content but no raw arguments.
+- Cannot expand rows upstream decides have no content. In `ToolRow.tsx`, `expandable = state !== 'preparing' && (inputRaw !== null || outputText !== null || card !== null)` — during `preparing` all three are empty, so there is nothing to click yet; the driver waits for `running`. Under the PTC preset tool calls are wrapped as sub-calls carrying `parentCallId`, and their card model returns null (`read-card-model.ts`), leaving only the raw output to unfold.
 - Configuration is per-browser; switching browsers or clearing site data resets it.
 
 ## 🛠️ Development

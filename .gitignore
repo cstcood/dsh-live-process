@@ -2,3 +2,7 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Probe runtime data (regenerated locally, never committed)
+docs/probe-events.jsonl
+docs/timers.json

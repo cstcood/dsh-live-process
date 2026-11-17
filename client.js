@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.6';
+    const VERSION = '1.7.0';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -152,7 +152,9 @@ window.__ModuleLoader__.load({
         on: true,
         foldable: true,
         leaf: true,
-        timed: true,
+        // No timer: an injection is part of building the request, and the host
+        // records no start or end for it. A number here would be invented.
+        timed: false,
         // The injection body only exists while the row is open, so it cannot be
         // used to find the row: a collapsed row would never be discovered and
         // therefore never opened. Locate the seat by node kind instead, then take
@@ -265,8 +267,8 @@ window.__ModuleLoader__.load({
     const SCHEME_IDS = ['dark', 'light'];
 
     const COMMON_DEFAULTS = {
-      dark: { liveBg: 13, barWidth: 3, radius: 8, padBlock: 7, padInline: 12, padLeft: 14, fontFamily: '' },
-      light: { liveBg: 18, barWidth: 3, radius: 8, padBlock: 7, padInline: 12, padLeft: 14, fontFamily: '' },
+      dark: { liveBg: 13, barWidth: 3, radius: 8, padBlock: 7, padInline: 12, padLeft: 14, codeBg: 12, codeBlockBg: 8, fontFamily: '' },
+      light: { liveBg: 18, barWidth: 3, radius: 8, padBlock: 7, padInline: 12, padLeft: 14, codeBg: 12, codeBlockBg: 8, fontFamily: '' },
     };
 
     const COMMON_RANGES = {
@@ -276,6 +278,8 @@ window.__ModuleLoader__.load({
       padBlock: [0, 24],
       padInline: [0, 40],
       padLeft: [0, 40],
+      codeBg: [0, 40],
+      codeBlockBg: [0, 40],
     };
 
     const HEX = /^#[0-9a-f]{6}$/i;
@@ -450,11 +454,17 @@ window.__ModuleLoader__.load({
       const rules = [];
       const liveSelectors = [];
 
+      // The upstream rows style themselves through CSS-module classes that sit
+      // at the same specificity as a single attribute selector, so a plain
+      // [data-dsh-block="think"] loses to `.root_x[data-variant="think"]`. The
+      // doubled attribute keeps every rule one notch above the host's own.
+      const self = key => `[${MARK}][${MARK}="${key}"]`;
+
       for (const def of BLOCK_DEFS) {
         const block = scheme.blocks[def.key];
         if (!block.on) continue;
         const lines = [
-          `[${MARK}="${def.key}"] {`,
+          `${self(def.key)} {`,
           `  --dsh-live-accent: ${block.color};`,
           `  box-shadow: inset ${scheme.common.barWidth}px 0 0 0 var(--dsh-live-accent);`,
           `  background: color-mix(in srgb, var(--dsh-live-accent) ${block.bg}%, transparent);`,
@@ -466,12 +476,12 @@ window.__ModuleLoader__.load({
         lines.push('}');
         rules.push(lines.join('\n'));
 
-        if (def.key === 'think') liveSelectors.push(`[${MARK}="think"][data-state="running"]`);
+        if (def.key === 'think') liveSelectors.push(`${self('think')}[data-state="running"]`);
         if (def.key === 'tool' || def.key === 'command') {
-          liveSelectors.push(`[${MARK}="${def.key}"][data-state="running"]`);
-          liveSelectors.push(`[${MARK}="${def.key}"][data-state="preparing"]`);
+          liveSelectors.push(`${self(def.key)}[data-state="running"]`);
+          liveSelectors.push(`${self(def.key)}[data-state="preparing"]`);
         }
-        if (def.key === 'process') liveSelectors.push(`[${MARK}="process"][data-open]`);
+        if (def.key === 'process') liveSelectors.push(`${self('process')}[data-open]`);
       }
 
       if (liveSelectors.length > 0) {
@@ -482,6 +492,77 @@ window.__ModuleLoader__.load({
           '}',
         ].join('\n'));
       }
+
+      // Inline code and code blocks keep the page surface, which reads as a white
+      // patch on top of a tinted process block. Pull them onto a neutral veil
+      // instead: the label colour darkens in the light scheme and lightens in
+      // the dark one, so the chip reads as grey on either tint without fighting
+      // the block's accent.
+      const accent = 'var(--dsh-live-accent, var(--dsw-alias-label-primary))';
+      const scope = `[${MARK}][${MARK}]`;
+      rules.push([
+        `${scope} :is(code, kbd, samp) {`,
+        `  background: color-mix(in srgb, var(--dsw-alias-label-primary) ${scheme.common.codeBg}%, transparent);`,
+        '  color: inherit;',
+        '  border-radius: 4px;',
+        '  padding: 1px 5px;',
+        '  box-shadow: none;',
+        '}',
+        `${scope} pre {`,
+        `  background: color-mix(in srgb, var(--dsw-alias-label-primary) ${scheme.common.codeBlockBg}%, transparent);`,
+        '  border-radius: 6px;',
+        '  box-shadow: none;',
+        '}',
+        `${scope} pre :is(code, kbd, samp) {`,
+        '  background: none;',
+        '  color: inherit;',
+        '  padding: 0;',
+        '}',
+      ].join('\n'));
+
+      // The disclosure header paints the page surface, so a tinted row turns
+      // into a white band the moment it opens. Let the row's own tint show
+      // through, and keep the hover feedback in the block's accent instead.
+      // The reasoning header carries an extra open-state rule of its own, which
+      // outranks the doubled attribute, so this block goes one level deeper.
+      const deep = `[${MARK}][${MARK}][${MARK}]`;
+      rules.push([
+        `${deep} [data-open],`,
+        `${deep} [data-disclosure-header],`,
+        `${deep} [data-disclosure-row] {`,
+        '  background: transparent;',
+        '}',
+        `${deep} [data-disclosure-header]:hover,`,
+        `${deep} [data-disclosure-row]:hover {`,
+        `  background: color-mix(in srgb, ${accent} 8%, transparent);`,
+        '}',
+      ].join('\n'));
+
+      // The expanded body is a third surface: the disclosure renders it as a
+      // sibling of the header and the row, and it brings its own page-coloured
+      // panel. Clear it too, otherwise opening a tinted row reveals a white
+      // slab underneath the header.
+      rules.push([
+        `${deep} [data-open] > :not([data-disclosure-header]):not([data-disclosure-row]) {`,
+        '  background: transparent;',
+        '}',
+      ].join('\n'));
+
+      // The context-injection row is a disclosure whose own container already
+      // carries the transcript gutter, so the shared padding pushes its tinted
+      // surface past the rows above and below it. Keep the tint, drop the inset,
+      // and pin the box so the tint cannot grow past its own column.
+      if (scheme.blocks.context.on) {
+        rules.push([
+          `${self('context')} {`,
+          '  padding: 2px 8px 2px 10px;',
+          '  margin: 0;',
+          '  box-sizing: border-box;',
+          '  max-width: 100%;',
+          '}',
+        ].join('\n'));
+      }
+
       return rules.join('\n');
     }
 
@@ -1333,6 +1414,26 @@ window.__ModuleLoader__.load({
               patchScheme({ common: { ...scheme.common, padLeft: value } });
             },
           }),
+          h(SliderField, {
+            label: '行内代码底色',
+            min: 0,
+            max: 40,
+            value: scheme.common.codeBg,
+            suffix: '%',
+            onChange: value => {
+              patchScheme({ common: { ...scheme.common, codeBg: value } });
+            },
+          }),
+          h(SliderField, {
+            label: '代码块底色',
+            min: 0,
+            max: 40,
+            value: scheme.common.codeBlockBg,
+            suffix: '%',
+            onChange: value => {
+              patchScheme({ common: { ...scheme.common, codeBlockBg: value } });
+            },
+          }),
         ),
         h(
           Group,
@@ -1553,19 +1654,57 @@ window.__ModuleLoader__.load({
         const startedAt = new WeakMap();
         const settledAt = new WeakMap();
         const badgeText = new WeakMap();
-        // Rows that were already settled when the plugin first looked at the page.
-        // Their real start is unknowable, so they never get a badge — and they
-        // must be remembered, because `primed` alone only guards the first frame:
-        // on the next sweep they would look like brand-new rows and be stamped
-        // with a meaningless 0ms.
-        const historic = new WeakSet();
-        // The chat flow virtualizes: scrolling a row out of view unmounts it and
-        // scrolling back mounts a brand-new element. Keyed by the chat anchor that
-        // survives the remount, so a row keeps its measured window instead of
-        // looking like a fresh one with no start.
-        const keyedStart = new Map();
-        const keyedSettled = new Map();
-        const keyedHistoric = new Set();
+        // The anchor a row carried when its window opened, so the settled anchor
+        // can be mirrored too.
+        const anchorAtStart = new WeakMap();
+
+        // The measured window of every call, keyed by chat anchor, mirrored into
+        // localStorage. A reload or a plugin restart must not wipe the timings of
+        // calls that already finished — the call is over, its duration is a fact.
+        const TIMER_KEY = 'dsh-live-process:timers';
+        // Enough headroom for the whole backfill (a session log yields roughly
+        // 1500 windows) plus weeks of live measuring.
+        const TIMER_LIMIT = 20000;
+        const timerStore = (() => {
+          const map = new Map();
+          try {
+            const raw = window.localStorage.getItem(TIMER_KEY);
+            const parsed = raw === null ? null : JSON.parse(raw);
+            if (parsed !== null && typeof parsed === 'object') {
+              for (const [key, value] of Object.entries(parsed)) {
+                if (Array.isArray(value) && typeof value[0] === 'number' && Number.isFinite(value[0])) {
+                  map.set(key, { start: value[0], end: typeof value[1] === 'number' ? value[1] : null });
+                }
+              }
+            }
+          } catch {
+            // A corrupt or unavailable store just means nothing is remembered.
+          }
+          return map;
+        })();
+
+        function saveTimers() {
+          try {
+            // Insertion order is not time order: the backfill appends whole
+            // sessions at once, so trimming by iteration order would delete the
+            // newest windows it had just added. Keep the newest by start time.
+            if (timerStore.size > TIMER_LIMIT) {
+              const ordered = [...timerStore.entries()].sort((left, right) => left[1].start - right[1].start);
+              for (const [key] of ordered.slice(0, timerStore.size - TIMER_LIMIT)) timerStore.delete(key);
+            }
+            const plain = {};
+            for (const [key, value] of timerStore) plain[key] = [value.start, value.end];
+            window.localStorage.setItem(TIMER_KEY, JSON.stringify(plain));
+          } catch {
+            // Storage quota or a private window: timings stay in memory only.
+          }
+        }
+
+        function dropBadge(row) {
+          const header = row.querySelector('[data-disclosure-header]');
+          const stale = header === null ? null : header.querySelector(':scope > .dte-timer');
+          if (stale !== null) stale.remove();
+        }
 
         function anchorOf(row) {
           const hosted = row.closest('[data-chat-anchor-key]');
@@ -1574,6 +1713,9 @@ window.__ModuleLoader__.load({
         }
 
         function formatElapsed(ms) {
+          // A backfilled window can be nonsense if a clock moved or two records
+          // disagree; show nothing rather than a negative duration.
+          if (!Number.isFinite(ms) || ms < 0) return '';
           if (ms < 1000) return `${Math.round(ms)}ms`;
           if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
           const minutes = Math.floor(ms / 60000);
@@ -1595,53 +1737,75 @@ window.__ModuleLoader__.load({
         function tickTimer(row, def) {
           if (!config.showTimer) return;
           const anchor = anchorOf(row);
-          const known = anchor === null ? historic.has(row) : keyedHistoric.has(anchor);
-          if (known) {
-            const header = row.querySelector('[data-disclosure-header]');
-            const stale = header === null ? null : header.querySelector(':scope > .dte-timer');
-            if (stale !== null) stale.remove();
-            return;
-          }
           // A context row carries no `data-state`, and a reasoning row's own
           // running flag is the row's live signal, so the block definition owns
           // the verdict whenever it has one.
           const state = row.getAttribute('data-state');
           const live = def !== undefined ? def.live(row) : state === 'running' || state === 'preparing';
-          let start = anchor === null ? startedAt.get(row) : keyedStart.get(anchor);
+
+          // The element is the primary key. A reasoning row's anchor is derived
+          // from a provisional assistant-step counter while it streams and is
+          // re-derived once it settles, so an anchor-only store loses the window
+          // exactly when the row finishes. The anchor store stays as the
+          // cross-reload mirror.
+          let start = startedAt.get(row);
+          let end = settledAt.get(row);
+
+          if (start === undefined && anchor !== null) {
+            const record = timerStore.get(anchor);
+            if (record !== undefined) {
+              start = record.start;
+              startedAt.set(row, start);
+              if (record.end !== null) {
+                end = record.end;
+                settledAt.set(row, end);
+              }
+            }
+          }
+
           if (start === undefined) {
             // A row first seen already settled has no observable start: the work
-            // happened before the plugin was watching. Remember it as history and
-            // show nothing rather than a made-up 0ms.
+            // happened before this plugin was watching. Show nothing rather than a
+            // made-up 0ms, and do not remember the decision — the log backfill can
+            // still supply the real window a moment later.
             if (!live) {
-              if (anchor === null) historic.add(row);
-              else keyedHistoric.add(anchor);
+              dropBadge(row);
               return;
             }
             start = Date.now();
-            if (anchor === null) startedAt.set(row, start);
-            else keyedStart.set(anchor, start);
-          }
-          let elapsed;
-          if (live) {
-            elapsed = Date.now() - start;
-          } else {
-            let end = anchor === null ? settledAt.get(row) : keyedSettled.get(anchor);
-            if (end === undefined) {
-              end = Date.now();
-              if (anchor === null) settledAt.set(row, end);
-              else keyedSettled.set(anchor, end);
+            startedAt.set(row, start);
+            anchorAtStart.set(row, anchor);
+            if (anchor !== null) {
+              timerStore.set(anchor, { start, end: null });
+              saveTimers();
             }
-            elapsed = end - start;
+          }
+
+          if (!live && end === undefined) {
+            end = Date.now();
+            settledAt.set(row, end);
+            // Mirror under both anchors: the provisional one the row carried while
+            // it ran, and the settled one it carries now.
+            const from = anchorAtStart.get(row);
+            if (from !== undefined && from !== null) timerStore.set(from, { start, end });
+            if (anchor !== null) timerStore.set(anchor, { start, end });
+            if (from !== undefined || anchor !== null) saveTimers();
+          }
+
+          const elapsed = end === undefined ? Date.now() - start : end - start;
+          const text = formatElapsed(elapsed);
+          if (text === '') {
+            dropBadge(row);
+            return;
           }
           const badge = badgeOf(row);
           if (badge === null) return;
-          const text = formatElapsed(elapsed);
           if (badgeText.get(badge) !== text) {
             badge.textContent = text;
             badgeText.set(badge, text);
           }
-          if (live) badge.setAttribute('data-live', 'true');
-          else badge.removeAttribute('data-live');
+          if (!live && end !== undefined) badge.removeAttribute('data-live');
+          else badge.setAttribute('data-live', 'true');
         }
 
         /**
@@ -1756,23 +1920,66 @@ window.__ModuleLoader__.load({
             if (blockMode === 'off') continue;
             for (const row of rows) driveRow(row, def, blockMode, row === lastLeaf);
           }
-          // Everything on screen at start-up is history; only rows that appear
-          // afterwards count as freshly injected. Settled rows are remembered so
-          // later sweeps cannot mistake them for new ones and stamp them 0ms.
-          if (!primed) {
-            for (const { def, rows } of collected) {
-              if (!def.timed) continue;
-              for (const row of rows) {
-                if (def.live(row)) continue;
-                const anchor = anchorOf(row);
-                if (anchor === null) historic.add(row);
-                else keyedHistoric.add(anchor);
-              }
-            }
-          }
+          // Rows already on screen when the plugin started are history: their
+          // work happened before anything was watching. Nothing is recorded for
+          // them — a settled row without a remembered window simply shows no
+          // badge, which a later backfill can still correct.
           primed = true;
           // Streaming grows the tail every frame; keep a pinned reader on it.
           pinToBottom(document.querySelector('[data-conversation-scroll]'));
+          probe();
+        }
+
+        // TEMPORARY diagnostic uplink: the GUI has no debugging port, so the live
+        // row state is posted to a local sink and read back from disk.
+        let probeAt = 0;
+        function probe() {
+          if (Date.now() - probeAt < 300) return;
+          probeAt = Date.now();
+          try {
+            const rows = [...document.querySelectorAll('[data-dsh-block]')];
+            const payload = {
+              v: VERSION,
+              at: Date.now(),
+              rows: rows.map(row => {
+                const header = row.querySelector('[data-disclosure-header]');
+                const root = header === null ? null : header.parentElement;
+                const ctl = control(row);
+                const badge = header === null ? null : header.querySelector(':scope > .dte-timer');
+                return {
+                  block: row.getAttribute('data-dsh-block'),
+                  tool: row.getAttribute('data-tool'),
+                  state: row.getAttribute('data-state'),
+                  anchor: anchorOf(row),
+                  open: root !== null && root.hasAttribute('data-open'),
+                  hasRow: row.querySelector('[data-disclosure-row]') !== null,
+                  hasAria: row.querySelector('[data-disclosure-row][aria-expanded]') !== null,
+                  ctl: ctl !== null,
+                  timer: badge === null ? null : badge.textContent,
+                  bg: getComputedStyle(row).backgroundColor,
+                  rootBg: root === null ? null : getComputedStyle(root).backgroundColor,
+                  headerBg: header === null ? null : getComputedStyle(header).backgroundColor,
+                  parentBg: row.parentElement === null
+                    ? null
+                    : getComputedStyle(row.parentElement).backgroundColor,
+                  bodyBg: root === null || root.lastElementChild === null
+                    ? null
+                    : getComputedStyle(root.lastElementChild).backgroundColor,
+                  box: (() => {
+                    const rect = row.getBoundingClientRect();
+                    return `${Math.round(rect.left)}/${Math.round(rect.width)}`;
+                  })(),
+                };
+              }),
+            };
+            fetch('http://127.0.0.1:8899/probe', {
+              method: 'POST',
+              mode: 'no-cors',
+              body: JSON.stringify(payload),
+            }).catch(() => {});
+          } catch {
+            // The probe must never disturb the page.
+          }
         }
 
         function schedule() {
@@ -1811,6 +2018,39 @@ window.__ModuleLoader__.load({
 
           schedule();
 
+          // Backfill: a call that finished before this plugin was watching has no
+          // observable window, but its timestamps survive in the session log. The
+          // local sink rebuilds the table on every request, so polling it keeps the
+          // newest calls covered too. Without it the plugin works exactly as
+          // before, so the request is allowed to fail silently.
+          const refreshSeed = () => {
+            fetch('http://127.0.0.1:8899/timers')
+              .then(response => (response.ok ? response.json() : null))
+              .then(data => {
+                if (data === null || typeof data !== 'object') return;
+                let added = 0;
+                for (const [key, value] of Object.entries(data)) {
+                  if (!Array.isArray(value) || typeof value[0] !== 'number') continue;
+                  // The session log is the authority: its timestamps are what the
+                  // scheduler actually measured, so they replace anything this
+                  // plugin guessed by watching the DOM.
+                  const next = { start: value[0], end: typeof value[1] === 'number' ? value[1] : null };
+                  const held = timerStore.get(key);
+                  if (held !== undefined && held.start === next.start && held.end === next.end) continue;
+                  timerStore.set(key, next);
+                  added += 1;
+                }
+                if (added > 0) {
+                  saveTimers();
+                  schedule();
+                }
+              })
+              .catch(() => {});
+          };
+          refreshSeed();
+          const seedTick = setInterval(refreshSeed, 15000);
+          const probeTick = setInterval(probe, 400);
+
           // A context row's live window expires on a clock rather than on a DOM
           // change, so poll while the transcript is otherwise idle to let the
           // row fold itself once the window closes.
@@ -1821,6 +2061,8 @@ window.__ModuleLoader__.load({
             observer.disconnect();
             themeObserver.disconnect();
             clearInterval(tick);
+            clearInterval(seedTick);
+            clearInterval(probeTick);
             if (frame !== 0) cancelAnimationFrame(frame);
             frame = 0;
             for (const timer of timers) clearTimeout(timer);

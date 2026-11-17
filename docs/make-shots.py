@@ -81,6 +81,8 @@ def block(
     body_color,
     live: bool = False,
     elapsed: str | None = None,
+    rich_lines: dict[int, list[tuple[str, bool]]] | None = None,
+    code_bg: tuple[int, int, int] | None = None,
 ) -> float:
     """One transcript process block: accent bar, tinted surface, title, body."""
     pad_top, pad_bottom, line_height = 9, 10, 21
@@ -104,7 +106,18 @@ def block(
             fill=color,
         )
     for index, line in enumerate(lines):
-        canvas.text(x + 16, y + pad_top + 26 + index * line_height, line, body_font, body_color)
+        line_y = y + pad_top + 26 + index * line_height
+        segments = None if rich_lines is None else rich_lines.get(index)
+        if segments is None:
+            canvas.text(x + 16, line_y, line, body_font, body_color)
+            continue
+        cursor = x + 16
+        for text, is_code in segments:
+            width = canvas.width_of(text, body_font)
+            if is_code:
+                canvas.box(cursor - 2, line_y - 1, width + 4, 15, 3, code_bg or body_color)
+            canvas.text(cursor, line_y, text, body_font, body_color)
+            cursor += width
     return height
 
 
@@ -117,6 +130,7 @@ def transcript(name: str, *, dark: bool) -> None:
         meta_color = (128, 128, 140)
         user_bg = (38, 52, 74)
         user_fg = (214, 226, 244)
+        code_bg = (60, 60, 70)
         palette = {
             "think": ((139, 124, 246), 7),
             "tool": ((47, 158, 110), 6),
@@ -131,6 +145,7 @@ def transcript(name: str, *, dark: bool) -> None:
         meta_color = (132, 132, 144)
         user_bg = (226, 236, 250)
         user_fg = (30, 48, 76)
+        code_bg = (224, 224, 232)
         palette = {
             "think": ((109, 79, 216), 9),
             "tool": ((31, 138, 92), 8),
@@ -162,12 +177,14 @@ def transcript(name: str, *, dark: bool) -> None:
         canvas, x, y, w, color, tint,
         "思考", "已折叠",
         [
-            "先确认 package.json 里的 build 脚本，再决定并行度。",
+            "先确认 build 脚本，再决定并行度。",
             "测试要跑全量，避免只验证改动路径。",
         ],
         title_font=title_font, meta_font=meta_font, body_font=body_font,
         title_color=title_color, meta_color=meta_color, body_color=body_color,
         elapsed="12.4s",
+        rich_lines={0: [("先确认 ", False), ("build", True), (" 脚本，再决定并行度。", False)]},
+        code_bg=code_bg,
     ) + 10
 
     color, tint = palette["tool"]
@@ -227,6 +244,33 @@ def toggle(canvas: Canvas, x: float, y: float, on: bool, accent) -> None:
     )
 
 
+def slider(
+    canvas: Canvas,
+    x: float,
+    y: float,
+    w: float,
+    label: str,
+    value: int,
+    maximum: int,
+    suffix: str,
+    label_font,
+    value_font,
+    label_color,
+    value_color,
+    accent,
+) -> None:
+    canvas.text(x, y, label, label_font, label_color)
+    canvas.text(x + w + 10, y + 1, f"{value}{suffix}", value_font, value_color)
+    track_y = y + 24
+    canvas.box(x, track_y, w, 4, 2, (58, 58, 66))
+    filled = max(3.0, w * value / maximum)
+    canvas.box(x, track_y, filled, 4, 2, accent)
+    canvas.draw.ellipse(
+        [canvas.px(x + filled - 6), canvas.px(track_y - 5), canvas.px(x + filled + 6), canvas.px(track_y + 7)],
+        fill=(228, 228, 236),
+    )
+
+
 def settings(name: str) -> None:
     bg = (24, 24, 27)
     panel = (32, 32, 36)
@@ -236,8 +280,8 @@ def settings(name: str) -> None:
     meta_color = (132, 132, 144)
     accent = (94, 140, 255)
 
-    canvas = Canvas(1000, 780, bg)
-    canvas.box(24, 20, 952, 740, 12, panel)
+    canvas = Canvas(1000, 980, bg)
+    canvas.box(24, 20, 952, 940, 12, panel)
 
     title_font = font(UI_BOLD, 13)
     meta_font = font(UI, 11)
@@ -260,7 +304,7 @@ def settings(name: str) -> None:
         px += pill(canvas, px, 184, label, small_font, index == 0, accent) + 8
 
     canvas.text(66, 220, "显示耗时", label_font, title_color)
-    canvas.text(140, 222, "工具行与命令卡标题后显示运行时长", small_font, meta_color)
+    canvas.text(140, 222, "工具行、命令卡与思考行标题后显示运行时长", small_font, meta_color)
     toggle(canvas, 880, 219, True, accent)
 
     # process block group
@@ -291,13 +335,39 @@ def settings(name: str) -> None:
         toggle(canvas, 880, y + 21, on, accent)
         y += 70
 
-    # diagnostics group
-    canvas.box(48, 590, 904, 40, 10, card)
-    canvas.text(66, 602, "诊断", title_font, title_color)
-    canvas.text(112, 604, "v1.6.2", small_font, meta_color)
-    canvas.text(920, 602, "11", small_font, meta_color)
+    # common group (expanded, carries the two code tints)
+    canvas.box(48, 596, 904, 40, 10, card)
+    canvas.text(66, 608, "通用", title_font, title_color)
+    canvas.text(112, 610, "暗色套 · 几何与代码底色", small_font, meta_color)
+    canvas.text(920, 608, "8", small_font, meta_color)
 
-    canvas.box(48, 640, 904, 76, 10, block_card)
+    canvas.box(48, 646, 904, 176, 10, block_card)
+    sliders = [
+        ("运行态浓度", 13, 60, "%"),
+        ("色条宽度", 3, 8, "px"),
+        ("圆角", 8, 20, "px"),
+        ("上下内边距", 7, 24, "px"),
+        ("右内边距", 12, 40, "px"),
+        ("左内边距", 14, 40, "px"),
+        ("行内代码底色", 12, 40, "%"),
+        ("代码块底色", 8, 40, "%"),
+    ]
+    for index, (label, value, maximum, suffix) in enumerate(sliders):
+        column, row = index % 2, index // 2
+        sx = 66 + column * 448
+        sy = 662 + row * 40
+        slider(
+            canvas, sx, sy, 350, label, value, maximum, suffix,
+            small_font, small_font, meta_color, title_color, accent,
+        )
+
+    # diagnostics group
+    canvas.box(48, 834, 904, 40, 10, card)
+    canvas.text(66, 846, "诊断", title_font, title_color)
+    canvas.text(112, 848, "v1.7.0", small_font, meta_color)
+    canvas.text(920, 846, "11", small_font, meta_color)
+
+    canvas.box(48, 884, 904, 68, 10, block_card)
     metrics = [
         ("思考行", "3"), ("思考已展开", "1"), ("工具行", "5"), ("工具已展开", "1"),
         ("工具运行中", "1"), ("工具准备中", "0"), ("工具可展开", "4"), ("命令卡", "2"),
@@ -306,11 +376,10 @@ def settings(name: str) -> None:
     for index, (label, value) in enumerate(metrics):
         column, row = index % 4, index // 4
         mx = 66 + column * 224
-        my = 654 + row * 20
+        my = 896 + row * 18
         canvas.text(mx, my, label, small_font, meta_color)
         canvas.text(mx + 150, my, value, small_font, title_color)
 
-    canvas.text(48, 730, "改动立即生效，无需重启；配置保存在本浏览器。", small_font, meta_color)
     canvas.save(name)
 
 

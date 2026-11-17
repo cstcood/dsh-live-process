@@ -8,11 +8,11 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.6-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.7.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
-> **当前版本 `1.6.6`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
+> **当前版本 `1.7.0`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
 > 不接管渲染，只驱动上游自己的展开控件——所以升级 DSH 后通常无需改插件。
 
 </div>
@@ -43,6 +43,7 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 - **🌗 暗色与浅色两套配色** — 界面切主题时自动套用对应的一套；也可以锁定只用其中一套。两套各自存颜色、底色浓度、字号、字体。
 - **🎨 十二类块可分别配色** — 思考、工具、命令卡、上下文注入、压缩标记、过程组、轮次尾部、用户气泡、运行状态、队列、待办、引导消息。
 - **📐 样式参数可调** — 左侧色条宽度、圆角、上下/右/左内边距、运行态底色浓度、字号、字体族。
+- **🖍️ 代码底色可调** — 过程块里的行内代码与代码块用中性灰底，浓度按色板分别可调，不会在深色块里浮出一块白。
 - **⚡ 改动立即生效** — 配置存在浏览器 `localStorage`，不用重启 Host，不用重装插件。
 - **⏱️ 耗时徽章** — 工具行、命令卡、思考行和上下文注入行的标题后显示运行时长，运行中实时递增，结束后定格。历史行不显示，不编造数字。
 - **🕗 折叠时机可选** — 「下一条出现时」（默认）让结束的行保持展开，等下一行过程出现才折叠；也可以选「结束即折叠」。一轮以正文收尾时，最后一条过程行是否折叠单独一个开关。
@@ -66,7 +67,7 @@ plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.6.6"
+    "@cstcood/dsh-live-process": "^1.7.0"
   }
 }
 ```
@@ -118,7 +119,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 | 折叠规则 | 全局四档 + 折叠时机 + 最后一步是否折叠 + 显示耗时开关，常驻显示 |
 | 过程块 | 思考、工具、命令卡、上下文注入、压缩标记、过程组 |
 | 其他块 | 轮次尾部、用户气泡、运行状态、队列、待办、引导消息 |
-| 通用 | 字体族、运行态浓度、色条宽度、圆角、三向内边距 |
+| 通用 | 字体族、运行态浓度、色条宽度、圆角、三向内边距、行内代码底色、代码块底色 |
 | 预览 | 当前色板下所有启用块的实际效果 |
 | 诊断 | 实时行数统计、贴底状态、拉回次数与插件版本 |
 
@@ -140,12 +141,13 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 
 ### 耗时
 
-工具行、命令卡、思考行和上下文注入行的标题后面会跟一个耗时徽章：运行中实时递增，结束后定格。
+工具行、命令卡、思考行的标题后面会跟一个耗时徽章：运行中实时递增，结束后定格。
 
-- 起点是该行第一次出现在 DOM 里的时刻（通常是 `preparing`），终点是 `data-state` 落到 `ok` / `error` / `stopped` 的时刻。
-- 页面加载时已经在屏上的历史行不显示耗时——它们的真实起点无从得知，与其编一个不如不显示。
-- 不足一秒显示 `ms`，一分钟内显示 `s`（一位小数），再长显示 `m` + `s`。
-- 在 设置 → 过程块样式 → 通用 里可以关掉。
+- 起点是该行第一次出现在 DOM 里的时刻，终点是它停止运行的时刻。不足一秒显示 `ms`，一分钟内显示 `s`（一位小数），再长显示 `m` + `s`。
+- 计时按 `data-chat-anchor-key` 记账，不是按 DOM 元素。对话流会虚拟化——滚出视野的行被卸载，滚回来是全新元素；按锚点记就能沿用原来的窗口，历史行的耗时不会滚一圈回来变成 `0ms`。
+- 页面加载时已经在屏上的历史行不显示耗时——真实起点无从得知，与其编一个不如不显示。
+- 上下文注入不显示耗时：它的耗时属于请求构造，上游没有为它记录起止边界，任何数字都是编的。
+- 开关在 设置 → 过程块样式 → 折叠规则 → **显示耗时**。
 
 ## ⚙️ 配置结构
 
@@ -164,7 +166,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
   },
   "schemes": {
     "dark": {
-      "common": { "liveBg": 13, "barWidth": 3, "radius": 8, "padBlock": 7, "padInline": 12, "padLeft": 14, "fontFamily": "" },
+      "common": { "liveBg": 13, "barWidth": 3, "radius": 8, "padBlock": 7, "padInline": 12, "padLeft": 14, "codeBg": 12, "codeBlockBg": 8, "fontFamily": "" },
       "blocks": { "think": { "color": "#8b7cf6", "bg": 7, "on": true, "fontSize": 0 } }
     },
     "light": { "common": {}, "blocks": {} }
@@ -196,7 +198,8 @@ DSH 的 Chat 与 Tool 包自己持有展开状态，并且明确不对外暴露�
 1. **每 `(行, data-state, 意图)` 只点一次。** 展开控件的 `open` 是 `expanded && expandable`，行还不能展开时点完仍然报告「关闭」；如果校验失败就重试，第二次点击会把刚置位的 `expanded` 点回去，来回抖动。
 2. **找不到控件时不记录「已处理」。** 工具行在 `preparing` 阶段 `expandable` 为假，`aria-expanded`、`role="button"`、`onClick` 全都不存在。此时放弃并等下一帧，等行自己长到 `running` 再点。
 3. **不能用「展开后才存在」的节点定位行。** 上下文注入正文 `[data-context-injection-body]` 只在展开时渲染，用它找行会形成「要展开才能被找到、要被找到才能展开」的死循环。改用节点座位 `[data-chat-flow-kind="context"]` 定位，再取其中的 disclosure 根。
-4. **展开后补滚到底。** 在尾部上方展开一行会让内容变高，浏览器的 scroll anchoring 把视口顶离底部，DSH 的 `ScrollFollow` 会把这当成「读者自己滚了」而停止跟随。插件在点击后 60 / 220 / 520ms 三个时间点把 `scrollTop` 拉回底部，一旦收到 `wheel` / `touchmove` 立刻取消。
+4. **展开后补滚到底。** 在尾部上方展开一行会让内容变高，浏览器的 scroll anchoring 把视口顶离底部，DSH 的 `ScrollFollow` 会把这当成「读者自己滚了」而停止跟随。插件在点击后 60 / 220 / 520ms 三个时间点把 `scrollTop` 拉回底部，一旦收到 `wheel` / `touchmove` 立刻取消。只有展开前本来就贴底时才补位——否则从上方翻看时任何一次自动展开都会把你拽回尾部。
+5. **样式要压过上游的 CSS Modules。** 上游行样式是 `.root_x[data-variant="think"]`（特异度 0,2,0）。插件最初写 `[data-dsh-block="think"]`（0,1,0）一直输，只剩 `:hover` 勉强生效——表现就是「鼠标移上去才正常，不移就还是白底」。现在按 0,2,0 / 0,3,0 / 0,4,0 三档递增选择器书写，展开态表头那块白底要最深一档才压得住。
 
 上下文注入没有 `data-state`——它到达时就是完整的，之后不再变化。插件把它「出现后 3 秒内」视为运行中：到达即展开，窗口结束自动折叠。为此驱动带一个 1 秒轮询，空闲时也能让窗口过期。
 
@@ -204,7 +207,7 @@ DSH 的 Chat 与 Tool 包自己持有展开状态，并且明确不对外暴露�
 
 - 只支持 Web 界面；桌面端与 TUI 不走这条渲染路径。
 - 依赖上表的 DOM 属性。上游改属性名会让插件失效——诊断卡片会显示「工具行 > 0 但工具可展开 = 0」这类信号。
-- 无法让「上游认为不可展开」的行展开。例如 `read-family-row.tsx` 直接传 `bodyRaw={null}`，这类行只有卡片内容，没有原始参数。
+- 无法让上游判定为「没有内容」的行展开。`ToolRow.tsx` 的 `expandable = state !== 'preparing' && (inputRaw !== null || outputText !== null || card !== null)`：`preparing` 阶段三者皆空，此时点不出东西，只能等行自己走到 `running`。PTC 模式下工具调用被包成子调用、带 `parentCallId`，卡片 model 会返回 null（`read-card-model.ts`），这类行只剩下原始输出可翻。
 - 配置存在浏览器本地，换浏览器或清站点数据会回到默认值。
 
 ## 🛠️ 开发
