@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-think-expand",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "description": "Live-process blocks for the Chat transcript: reasoning and tool rows open while running, fold when settled, and carry configurable block styling from a Settings page.",
