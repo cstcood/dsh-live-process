@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.1';
+    const VERSION = '1.6.2';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -1412,6 +1412,12 @@ window.__ModuleLoader__.load({
         const startedAt = new WeakMap();
         const settledAt = new WeakMap();
         const badgeText = new WeakMap();
+        // Rows that were already settled when the plugin first looked at the page.
+        // Their real start is unknowable, so they never get a badge — and they
+        // must be remembered, because `primed` alone only guards the first frame:
+        // on the next sweep they would look like brand-new rows and be stamped
+        // with a meaningless 0ms.
+        const historic = new WeakSet();
 
         function formatElapsed(ms) {
           if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -1434,13 +1440,23 @@ window.__ModuleLoader__.load({
 
         function tickTimer(row) {
           if (!config.showTimer) return;
+          if (historic.has(row)) {
+            const header = row.querySelector('[data-disclosure-header]');
+            const stale = header === null ? null : header.querySelector(':scope > .dte-timer');
+            if (stale !== null) stale.remove();
+            return;
+          }
           const state = row.getAttribute('data-state');
           const live = state === 'running' || state === 'preparing';
           let start = startedAt.get(row);
           if (start === undefined) {
-            // Rows already settled when the page loaded are history: their real
-            // start is unknown, so they get no badge rather than a made-up one.
-            if (!live && !primed) return;
+            // A row first seen already settled has no observable start: the work
+            // happened before the plugin was watching. Remember it as history and
+            // show nothing rather than a made-up 0ms.
+            if (!live) {
+              historic.add(row);
+              return;
+            }
             start = Date.now();
             startedAt.set(row, start);
           }
@@ -1563,7 +1579,17 @@ window.__ModuleLoader__.load({
             for (const row of rows) driveRow(row, def, blockMode, row === lastLeaf);
           }
           // Everything on screen at start-up is history; only rows that appear
-          // afterwards count as freshly injected.
+          // afterwards count as freshly injected. Settled rows are remembered so
+          // later sweeps cannot mistake them for new ones and stamp them 0ms.
+          if (!primed) {
+            for (const { def, rows } of collected) {
+              if (!def.timed) continue;
+              for (const row of rows) {
+                const state = row.getAttribute('data-state');
+                if (state !== 'running' && state !== 'preparing') historic.add(row);
+              }
+            }
+          }
           primed = true;
           // Streaming grows the tail every frame; keep a pinned reader on it.
           pinToBottom(document.querySelector('[data-conversation-scroll]'));
