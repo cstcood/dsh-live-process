@@ -8,7 +8,7 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
@@ -112,7 +112,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 | 区块 | 内容 |
 | --- | --- |
 | 配色方案 | 跟随界面 / 暗色 / 浅色。决定下面编辑的是哪一套色板 |
-| 折叠规则 | 全局四档，常驻显示 |
+| 折叠规则 | 全局四档 + 折叠时机 + 最后一步是否折叠，常驻显示 |
 | 过程块 | 思考、工具、命令卡、上下文注入、压缩标记、过程组 |
 | 其他块 | 轮次尾部、用户气泡、运行状态、队列、待办、引导消息 |
 | 通用 | 字体族、运行态浓度、色条宽度、圆角、三向内边距 |
@@ -121,6 +121,19 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 
 每个块卡片上有：色点与十六进制值、启用开关、展开策略胶囊、颜色选择器、底色浓度滑块、字号。
 
+### 折叠时机
+
+「运行时展开」模式下，一行停止运行后什么时候折叠，由两个设置决定：
+
+| 设置 | 取值 | 行为 |
+| --- | --- | --- |
+| 折叠时机 | **下一条出现时**（默认） | 结束后保持展开，等下一行过程出现才折叠。你正在读的那一行不会在脚下收起来 |
+| | 结束即折叠 | 一行停止运行就立刻折叠 |
+| 最后一步是正文时折叠 | 关（默认） | 最后一条过程行后面没有过程行了，就一直展开着 |
+| | 开 | 它后面没有过程行时也折叠 |
+
+「最后一步是正文」指一轮以助手正文收尾：最后一条过程行之后不会再有过程行，`下一条出现时` 永远等不到触发，所以单独给一个开关。
+
 ## ⚙️ 配置结构
 
 `localStorage` 键：`dsh-live-process:config`
@@ -128,6 +141,8 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 ```jsonc
 {
   "foldMode": "auto",          // auto | expand | collapse | off
+  "foldTiming": "onNext",      // onNext | onEnd
+  "foldLast": false,           // 最后一条过程行后面没有过程行时是否折叠
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // 每块覆盖，inherit 表示跟随 foldMode
     "think": "inherit",

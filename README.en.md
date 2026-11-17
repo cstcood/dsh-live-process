@@ -8,7 +8,7 @@
 
 ### Unfold the process the moment it happens
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
@@ -112,7 +112,7 @@ Open Settings → **Process block styles**.
 | Section | Contents |
 | --- | --- |
 | Palette | Follow UI / dark / light — decides which palette the sections below edit |
-| Fold rule | The four global modes, always visible |
+| Fold rule | The four global modes, the fold timing and the last-row switch, always visible |
 | Process blocks | Thinking, tools, command cards, context injection, compaction, process groups |
 | Other blocks | Turn tail, user bubble, running status, queue, todos, steering |
 | Common | Font family, running tint, bar width, radius, three paddings |
@@ -121,6 +121,19 @@ Open Settings → **Process block styles**.
 
 Each block card carries a color dot with its hex value, an enable switch, a fold-mode pill, a color picker, a tint slider and a font size.
 
+### Fold timing
+
+Under the `auto` mode, when a finished row folds is decided by two settings:
+
+| Setting | Value | Behaviour |
+| --- | --- | --- |
+| Fold timing | **On next row** (default) | A finished row stays open until the next process row arrives, so the row you are reading never folds under you |
+| | On end | A row folds the moment it stops producing |
+| Fold the last row | Off (default) | The last process row has no successor, so it stays open |
+| | On | It folds even when nothing follows it |
+
+"Last row" means a turn that ends with assistant prose: no process row will ever follow, so `on next row` would wait forever. That is why it gets its own switch.
+
 ## ⚙️ Configuration
 
 `localStorage` key: `dsh-live-process:config`
@@ -128,6 +141,8 @@ Each block card carries a color dot with its hex value, an enable switch, a fold
 ```jsonc
 {
   "foldMode": "auto",          // auto | expand | collapse | off
+  "foldTiming": "onNext",      // onNext | onEnd
+  "foldLast": false,           // fold the last row when nothing follows it
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // per-block override, inherit follows foldMode
     "think": "inherit",

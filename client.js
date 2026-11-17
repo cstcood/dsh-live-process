@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.4.1';
+    const VERSION = '1.5.0';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -48,6 +48,16 @@ window.__ModuleLoader__.load({
       { id: 'collapse', label: '折叠', title: '新出现的行一律折叠' },
       { id: 'auto', label: '运行时', title: '运行时展开，结束后折叠' },
       { id: 'off', label: '不干预', title: '不碰展开状态' },
+    ];
+
+    /**
+     * When a finished row folds. `onEnd` folds the moment the row stops
+     * producing; `onNext` keeps it open until the next process row arrives, so
+     * the row you are reading never collapses out from under you.
+     */
+    const FOLD_TIMINGS = [
+      { id: 'onNext', label: '下一条出现时', title: '结束后保持展开，等下一行过程出现再折叠' },
+      { id: 'onEnd', label: '结束即折叠', title: '一行停止运行就立刻折叠' },
     ];
 
     // ------------------------------------------------------------- block kinds
@@ -92,6 +102,7 @@ window.__ModuleLoader__.load({
         light: { color: '#6d4fd8', bg: 9 },
         on: true,
         foldable: true,
+        leaf: true,
         rows: () => document.querySelectorAll('[data-variant="think"]'),
         live: row => row.getAttribute('data-state') === 'running',
       },
@@ -104,6 +115,7 @@ window.__ModuleLoader__.load({
         light: { color: '#1f8a5c', bg: 8 },
         on: true,
         foldable: true,
+        leaf: true,
         rows: () => [...document.querySelectorAll('[data-tool]')]
           .filter(row => row.parentElement?.closest('[data-tool]') === null),
         live: row => {
@@ -120,6 +132,7 @@ window.__ModuleLoader__.load({
         light: { color: '#b06f14', bg: 8 },
         on: true,
         foldable: true,
+        leaf: true,
         rows: () => document.querySelectorAll('[data-variant="others"]:not([data-tool])'),
         live: row => {
           const state = row.getAttribute('data-state');
@@ -135,6 +148,7 @@ window.__ModuleLoader__.load({
         light: { color: '#2a6fb0', bg: 7 },
         on: true,
         foldable: true,
+        leaf: true,
         // The injection body only exists while the row is open, so it cannot be
         // used to find the row: a collapsed row would never be discovered and
         // therefore never opened. Locate the seat by node kind instead, then take
@@ -308,12 +322,16 @@ window.__ModuleLoader__.load({
     function sanitize(raw) {
       const out = {
         foldMode: 'auto',
+        foldTiming: 'onNext',
+        foldLast: false,
         schemeMode: 'auto',
         modes: Object.fromEntries(BLOCK_DEFS.map(def => [def.key, 'inherit'])),
         schemes: { dark: defaultScheme('dark'), light: defaultScheme('light') },
       };
       if (raw === null || typeof raw !== 'object') return out;
       if (FOLD_MODES.some(mode => mode.id === raw.foldMode)) out.foldMode = raw.foldMode;
+      if (FOLD_TIMINGS.some(mode => mode.id === raw.foldTiming)) out.foldTiming = raw.foldTiming;
+      if (typeof raw.foldLast === 'boolean') out.foldLast = raw.foldLast;
       if (SCHEME_MODES.some(mode => mode.id === raw.schemeMode)) out.schemeMode = raw.schemeMode;
 
       // v1 stored one palette at the top level: copy it into both schemes.
@@ -540,6 +558,9 @@ window.__ModuleLoader__.load({
 .dte-switch input:checked + span::after { transform: translateX(14px); }
 .dte-switch input:focus-visible + span { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
 .dte-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dte-row-main { display: flex; flex-direction: column; gap: 2px; flex: 1 1 220px; min-width: 0; }
+.dte-row-label { font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-primary); }
+.dte-row-hint { font-size: 11px; line-height: 1.5; color: var(--dsw-alias-label-secondary); }
 .dte-label { font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); min-width: 64px; }
 .dte-input {
   height: 28px; padding: 0 8px; font: inherit; font-size: 12px;
@@ -971,6 +992,48 @@ window.__ModuleLoader__.load({
               { className: 'dte-hint' },
               '「运行时展开」让过程块在运行中自动打开、结束后自动折叠；你手动展开的行不会被折叠。「全部展开」「全部折叠」只在新行出现时应用一次，之后尊重你的手动操作。每个块可在下方单独覆盖这条规则——例如全局选「全部展开」，只让思考块展开、工具块保持折叠。',
             ),
+            h('span', { className: 'dte-group-title', style: { marginTop: '14px' } }, '折叠时机'),
+            h(
+              'div',
+              { className: 'dte-seg', role: 'radiogroup', 'aria-label': '折叠时机' },
+              FOLD_TIMINGS.map(mode =>
+                h(
+                  'button',
+                  {
+                    key: mode.id,
+                    type: 'button',
+                    role: 'radio',
+                    title: mode.title,
+                    'aria-checked': current.foldTiming === mode.id,
+                    onClick: () => {
+                      update({ foldTiming: mode.id });
+                    },
+                  },
+                  mode.label,
+                ),
+              ),
+            ),
+            h(
+              'div',
+              { className: 'dte-row' },
+              h(
+                'div',
+                { className: 'dte-row-main' },
+                h('span', { className: 'dte-row-label' }, '最后一步是正文时折叠'),
+                h(
+                  'span',
+                  { className: 'dte-row-hint' },
+                  '关：最后一条过程行一直展开，直到下一条过程出现；开：它后面没有过程行时也折叠。',
+                ),
+              ),
+              h(Switch, {
+                checked: current.foldLast,
+                title: '最后一步是正文时折叠',
+                onChange: value => {
+                  update({ foldLast: value });
+                },
+              }),
+            ),
           ),
         ),
         h(
@@ -1176,7 +1239,6 @@ window.__ModuleLoader__.load({
       inject: ['slots'],
       apply(ctx) {
         const autoOpened = new WeakSet();
-        const lastLive = new WeakMap();
         const lastState = new WeakMap();
         // One click per (row, state, intent). The disclosure's own `open` is
         // `expanded && expandable`, so a row that cannot open yet reports closed
@@ -1253,26 +1315,30 @@ window.__ModuleLoader__.load({
           if (pinned) holdTail(scroller);
         }
 
-        function driveRow(row, def, mode) {
+        function driveRow(row, def, mode, isLast) {
           const stateNow = row.getAttribute('data-state');
           if (lastState.get(row) !== stateNow) {
             lastState.set(row, stateNow);
-            lastLive.delete(row);
             fired.delete(row);
           }
           if (rowMode.get(row) !== mode) {
             rowMode.set(row, mode);
-            lastLive.delete(row);
             fired.delete(row);
           }
           let want;
           if (mode === 'auto') {
-            want = def.live(row);
-            if (lastLive.get(row) === want) return;
-            lastLive.set(row, want);
-            if (want) autoOpened.add(row);
-            else if (!autoOpened.has(row)) return;
-            else autoOpened.delete(row);
+            if (def.live(row)) {
+              autoOpened.add(row);
+              want = true;
+            } else {
+              if (!autoOpened.has(row)) return;
+              // `onNext` holds a finished row open until the next process row
+              // arrives, so the row you are reading never folds under you. The
+              // last row has no successor to wait for, so `foldLast` decides.
+              if (config.foldTiming === 'onNext' && isLast && !config.foldLast) return;
+              autoOpened.delete(row);
+              want = false;
+            }
           } else {
             want = mode === 'expand';
           }
@@ -1289,9 +1355,11 @@ window.__ModuleLoader__.load({
         function sweep() {
           frame = 0;
           const scheme = config.schemes[activeScheme()];
+          const collected = [];
           for (const def of BLOCK_DEFS) {
             const block = scheme.blocks[def.key];
-            const rows = def.rows();
+            const rows = [...def.rows()];
+            collected.push({ def, rows });
             for (const row of rows) {
               if (block.on) {
                 if (row.getAttribute(MARK) !== def.key) row.setAttribute(MARK, def.key);
@@ -1299,11 +1367,25 @@ window.__ModuleLoader__.load({
                 row.removeAttribute(MARK);
               }
             }
+          }
+          // The last leaf row is the one with nothing after it in the transcript:
+          // that is where `foldLast` applies, because no successor will arrive to
+          // trigger the `onNext` fold.
+          const leaves = [];
+          for (const { def, rows } of collected) if (def.leaf) leaves.push(...rows);
+          leaves.sort((a, b) => {
+            const position = a.compareDocumentPosition(b);
+            if ((position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) return -1;
+            if ((position & Node.DOCUMENT_POSITION_PRECEDING) !== 0) return 1;
+            return 0;
+          });
+          const lastLeaf = leaves.length > 0 ? leaves[leaves.length - 1] : null;
+          for (const { def, rows } of collected) {
             if (!def.foldable) continue;
             const override = config.modes[def.key];
             const blockMode = override === 'inherit' ? config.foldMode : override;
             if (blockMode === 'off') continue;
-            for (const row of rows) driveRow(row, def, blockMode);
+            for (const row of rows) driveRow(row, def, blockMode, row === lastLeaf);
           }
           // Everything on screen at start-up is history; only rows that appear
           // afterwards count as freshly injected.
