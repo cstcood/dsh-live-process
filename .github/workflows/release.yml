@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,3 +95,21 @@ jobs:
       - name: Publish to npm with trusted publishing
         if: steps.meta.outputs.exists == 'false' || inputs.force
         run: npm publish --access public
+
+      # A second copy on GitHub Packages, so the plugin can be installed without ever
+      # talking to the public npm registry. publishConfig.registry outranks --registry,
+      # so the field itself is repointed for this one publish and restored afterwards.
+      - name: Publish to GitHub Packages
+        if: steps.meta.outputs.exists == 'false' || inputs.force
+        env:
+          GH_PACKAGES_TOKEN: ${{ github.token }}
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=$GH_PACKAGES_TOKEN" >> "$NPM_CONFIG_USERCONFIG"
+          cp package.json "$RUNNER_TEMP/package.json.orig"
+          npm pkg set publishConfig.registry=https://npm.pkg.github.com
+          if npm publish --access public; then
+            echo "::notice::published to GitHub Packages"
+          else
+            echo "::warning::GitHub Packages publish failed; the npm registry copy is unaffected"
+          fi
+          cp "$RUNNER_TEMP/package.json.orig" package.json

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.3
+
+- 同时发布到 GitHub Packages：workflow 在 npm 官方源发布之后，用同一个 `GITHUB_TOKEN` 再发一份到 `npm.pkg.github.com`，两个渠道内容完全一致。因为 `publishConfig.registry` 会覆盖命令行的 `--registry`，这一步临时改掉该字段、发布完立刻还原，仓库里存的仍然是 npm 官方源。
+- GitHub Packages 那一份是旁路：失败只打 warning，不会让整个 Release 变红，公开源的可用性不受影响。
+- README 补了从 GitHub Packages 安装的写法（`npm config set @cstcood:registry https://npm.pkg.github.com`），适合完全不想碰公共 npm 的环境。
+
 ## 1.7.2
 
 - 发布通道改用 npm Trusted Publishing：workflow 拿 `id-token: write` 向 npm 换短期凭据，仓库里不再存任何 token。`setup-node` 写进 `.npmrc` 的空 `_authToken` 行会被删掉——留着它，npm 会先拿空 token 去认证，直接死在 OIDC 之前；Node 22 自带的 npm 也认不了 OIDC，所以先升到最新版。

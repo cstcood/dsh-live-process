@@ -12,7 +12,7 @@
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
-> **Current version `1.7.2`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> **Current version `1.7.3`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
 > It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
 
 </div>
@@ -69,12 +69,27 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.7.2"
+    "@cstcood/dsh-live-process": "^1.7.3"
   }
 }
 ```
 
 Then append `"@cstcood/dsh-live-process"` to `dsh.profile.bundles` and restart DSH.
+
+### From GitHub Packages
+
+The same package is also published to GitHub Packages, byte-identical to the npm registry copy. Use it on machines that should never talk to public npm:
+
+```powershell
+npm config set @cstcood:registry https://npm.pkg.github.com
+npm config set //npm.pkg.github.com/:_authToken $env:GITHUB_TOKEN
+```
+
+`GITHUB_TOKEN` only needs `read:packages`; a PAT from any GitHub account will do. After that, install as usual:
+
+```text
+plugin_manager install_bundle target=@cstcood/dsh-live-process
+```
 
 ### From a local directory
 

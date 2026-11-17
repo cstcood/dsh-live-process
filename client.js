@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.7.2';
+    const VERSION = '1.7.3';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';

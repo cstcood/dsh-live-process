@@ -12,7 +12,7 @@
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
-> **当前版本 `1.7.2`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
+> **当前版本 `1.7.3`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
 > 不接管渲染，只驱动上游自己的展开控件——所以升级 DSH 后通常无需改插件。
 
 </div>
@@ -69,12 +69,27 @@ plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.7.2"
+    "@cstcood/dsh-live-process": "^1.7.3"
   }
 }
 ```
 
 然后在 `dsh.profile.bundles` 末尾追加 `"@cstcood/dsh-live-process"`，重启 DSH。
+
+### 从 GitHub Packages 安装
+
+同一个包也发布在 GitHub Packages 上，内容和 npm 官方源逐字节一致。适合完全不想碰公共 npm 的机器：
+
+```powershell
+npm config set @cstcood:registry https://npm.pkg.github.com
+npm config set //npm.pkg.github.com/:_authToken $env:GITHUB_TOKEN
+```
+
+`GITHUB_TOKEN` 只需要 `read:packages` 权限，随便一个 GitHub 账号的 PAT 都行。配好之后照常：
+
+```text
+plugin_manager install_bundle target=@cstcood/dsh-live-process
+```
 
 ### 从本地目录安装
 
