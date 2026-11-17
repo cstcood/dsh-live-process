@@ -19,6 +19,8 @@
 
 DSH collapses every process row into a one-line summary, and while a turn is running all you see is "thinking…". This plugin unfolds each process row the moment it appears and folds it back when it settles.
 
+**Every process row also carries an elapsed badge.** How long the thinking ran, how long that command took, how many seconds that tool call sat there — written right after the title, ticking while it runs, frozen when it settles. No switching to the trajectory tab to read "request #55 · total 3.07s · first token 3.06s", no aligning start and end times on a timeline by hand: the number sits on the row where it happened.
+
 ## 🌱 Why this exists
 
 Let me be blunt about the motivation.
