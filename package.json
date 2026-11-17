@@ -4,6 +4,23 @@
   "private": true,
   "type": "module",
   "description": "Live-process blocks for the Chat transcript: reasoning and tool rows open while running, fold when settled, and carry configurable block styling from a Settings page.",
+  "license": "MIT",
+  "author": "cstcood",
+  "homepage": "https://github.com/cstcood/dsh-think-expand#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cstcood/dsh-think-expand.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cstcood/dsh-think-expand/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "reasoning",
+    "ui"
+  ],
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",

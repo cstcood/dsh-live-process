@@ -1,0 +1,160 @@
+> **Languages:** [中文](README.md) · English
+
+<div align="center">
+
+<img src="icon.svg" width="76" alt="DSH Think Expand">
+
+# DSH Think Expand
+
+### Unfold the process the moment it happens
+
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.4.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+**Thinking · Tools · Commands · Context injection — open while running, fold when done**
+
+> **Current version `1.4.0`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
+
+</div>
+
+DSH collapses every process row into a one-line summary, and while a turn is running all you see is "thinking…". This plugin unfolds each process row the moment it appears and folds it back when it settles — you watch the work happen instead of waiting for a conclusion.
+
+![Process blocks in the dark theme](docs/screenshots/transcript-dark.png)
+
+![Process blocks in the light theme](docs/screenshots/transcript-light.png)
+
+## ✨ Features
+
+- **🧠 Open while running, fold when done** — a process row opens when it enters `running` and folds when it settles to `ok` / `error` / `stopped`. Rows you opened by hand are never auto-folded.
+- **🎛️ Four global fold rules** — auto / expand all / collapse all / hands off.
+- **🧩 Per-block override** — keep the global rule at "expand all" while a single block stays collapsed. Five modes per block: inherit / expand / collapse / auto / off.
+- **🌗 Separate dark and light palettes** — the matching palette follows the UI theme automatically, or you can lock one. Each palette stores its own colors, tint strength, font size and font family.
+- **🎨 Twelve configurable block types** — thinking, tools, command cards, context injection, compaction markers, process groups, turn tails, user bubbles, running status, queue, todos, steering messages.
+- **📐 Adjustable geometry** — accent bar width, corner radius, block/inline/left padding, running tint strength, font size, font family.
+- **⚡ Instant effect** — configuration lives in browser `localStorage`; no Host restart, no reinstall.
+- **🔍 Built-in diagnostics** — the settings page reports how many rows the plugin actually sees, how many are expandable, and how many are open.
+
+![Settings page](docs/screenshots/settings.png)
+
+## 📦 Install
+
+The plugin ships as a DSH bundle and requires the DSH Web UI (`dsh.client.platform` is `web`).
+
+### Via plugin_manager
+
+```text
+plugin_manager install_bundle target=<absolute path to this repo>
+```
+
+The profile `package.json` gains a `link:` dependency and `dsh.profile.bundles` gets the plugin appended.
+
+### Manually
+
+1. Put the repo anywhere, e.g. `~/dsh-plugins/dsh-think-expand`.
+2. Add the dependency to the profile `package.json`:
+
+   ```json
+   {
+     "dependencies": {
+       "@local/dsh-think-expand": "link:~/dsh-plugins/dsh-think-expand"
+     }
+   }
+   ```
+
+3. Append `"@local/dsh-think-expand"` to `dsh.profile.bundles`.
+4. Restart DSH.
+
+### Reload
+
+Browser modules do not hot-reload after editing `client.js` (unless `pnpm run dev:web` is also running):
+
+```text
+plugin_manager set_plugin target=include:dsh-think-expand enabled=false
+plugin_manager set_plugin target=include:dsh-think-expand enabled=true
+```
+
+Then **refresh the page**.
+
+## 🖱️ Usage
+
+Open Settings → **Process block styles**.
+
+| Section | Contents |
+| --- | --- |
+| Palette | Follow UI / dark / light — decides which palette the sections below edit |
+| Fold rule | The four global modes, always visible |
+| Process blocks | Thinking, tools, command cards, context injection, compaction, process groups |
+| Other blocks | Turn tail, user bubble, running status, queue, todos, steering |
+| Common | Font family, running tint, bar width, radius, three paddings |
+| Preview | Live rendering of every enabled block in the current palette |
+| Diagnostics | Live row counts and plugin version |
+
+Each block card carries a color dot with its hex value, an enable switch, a fold-mode pill, a color picker, a tint slider and a font size.
+
+## ⚙️ Configuration
+
+`localStorage` key: `dsh-think-expand:config`
+
+```jsonc
+{
+  "foldMode": "auto",          // auto | expand | collapse | off
+  "schemeMode": "auto",        // auto | dark | light
+  "modes": {                   // per-block override, inherit follows foldMode
+    "think": "inherit",
+    "tool": "auto"
+  },
+  "schemes": {
+    "dark": {
+      "common": { "liveBg": 13, "barWidth": 3, "radius": 8, "padBlock": 7, "padInline": 12, "padLeft": 14, "fontFamily": "" },
+      "blocks": { "think": { "color": "#8b7cf6", "bg": 7, "on": true, "fontSize": 0 } }
+    },
+    "light": { "common": {}, "blocks": {} }
+  }
+}
+```
+
+Single-palette configs from older versions migrate on read: top-level `common` / `blocks` are copied into both palettes, and `blocks[key].fold` becomes `modes[key]`.
+
+## 🔬 How it works
+
+The DSH Chat and Tool packages own their disclosure state and deliberately expose no "expand by default" setting (`dsh-client-ui-chat/README.zh.md`: extensions do not replace the reasoning preview or the expand strategy). So this plugin does not take over rendering — it **observes the rows that are already rendered and clicks their own disclosure controls**.
+
+The DOM contract it relies on (from upstream source):
+
+| Selector | Source | Meaning |
+| --- | --- | --- |
+| `[data-variant="think"]` + `data-state` | `ReasoningRow.tsx` | Thinking row, `running` / `ok` |
+| `[data-tool]` + `data-state` | `ToolRow.tsx` | Tool row, `preparing` / `running` / `ok` / `error` / `stopped` |
+| `data-open` on the parent of `[data-disclosure-header]` | `DisclosureRow` | Open state — **the only signal that does not depend on `expandable`** |
+| `[data-disclosure-row][aria-expanded]` | `DisclosureRow` | The control; the whole attribute is absent while `expandable` is false |
+| `[data-context-injection-body]` | `ContextInjectionRow.tsx` | Context injection body |
+| `[data-compaction-disclosure]` | `CompactionItem.tsx` | Compaction marker |
+| `[data-turn-process]` | `TurnProcessNodeView.tsx` | Process group node |
+
+Three hard constraints in the driver, each learned the hard way:
+
+1. **Click once per `(row, data-state, intent)`.** The control's `open` is `expanded && expandable`; clicking a row that cannot expand yet still reports "closed". Retrying on that mismatch clicks a second time and flips the `expanded` you just set back off — visible flicker.
+2. **Never record "handled" when no control exists.** During `preparing`, a tool row has `expandable` false, so `aria-expanded`, `role="button"` and `onClick` are all absent. Give up and wait for the next frame, then click once the row reaches `running`.
+3. **Re-pin the scroll after expanding.** Expanding a row above the tail grows the content, browser scroll anchoring pushes the viewport off the bottom, and DSH's `ScrollFollow` reads that as "the reader scrolled" and stops following. The plugin pulls `scrollTop` back to the bottom at 60 / 220 / 520 ms after the click, and cancels immediately on `wheel` / `touchmove`.
+
+## ⚠️ Known limitations
+
+- Web UI only; the desktop shell and TUI do not use this render path.
+- Depends on the DOM attributes above. If upstream renames them the plugin goes quiet — the diagnostics card shows it (e.g. "tool rows > 0 but expandable = 0").
+- Cannot expand rows upstream considers non-expandable. `read-family-row.tsx` passes `bodyRaw={null}`, for instance: those rows have card content but no raw arguments.
+- Configuration is per-browser; switching browsers or clearing site data resets it.
+
+## 🛠️ Development
+
+```bash
+# Regenerate the README screenshots (needs Pillow and a CJK font)
+python docs/make-shots.py
+```
+
+`client.js` is the browser module, registered through `window.__ModuleLoader__.load({ id, factory })`. `index.js` is the Host entry point; this plugin needs no Host-side logic, so `apply()` is empty.
+
+## 📄 License
+
+[MIT](LICENSE) © 2026 cstcood
+
+DeepSeek Harness is an official DeepSeek open-source project (MIT). This plugin is not affiliated with it.
