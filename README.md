@@ -227,11 +227,15 @@ python docs/make-shots.py
 
 1. 读 `package.json` 的 `version`；
 2. 若远端还没有 `v<version>` 标签，就从 `CHANGELOG.md` 抽出该版本小节当作 release notes，打标签、建 GitHub Release；
-3. 配了 `NPM_TOKEN` 就顺带 `npm publish --provenance`。
+3. 用 **npm Trusted Publishing** 发布：workflow 拿 `id-token: write` 向 npm 换一个短期凭据，仓库里不放任何 token。
 
 所以发版只要改三处——`client.js` 的 `VERSION`、`package.json` 的 `version`、`CHANGELOG.md` 加一节——然后 commit + push。版本号没变时整条流程自动跳过，空提交不会多发一个 release。
 
-`NPM_TOKEN` 必须是带 **Bypass 2FA** 的 Granular Access Token：npm 账号开了双因素认证后，普通 token 发布会返回 `403 Two-factor authentication ... is required`。
+三个容易踩的点：
+
+- npm 侧要在包的 **Settings → Trusted publishing** 里登记 `cstcood/dsh-live-process` 与 workflow 文件名 `release.yml`，环境留空。
+- `setup-node` 会往 `.npmrc` 写一行 `_authToken=${NODE_AUTH_TOKEN}`。这行必须删掉，否则 npm 会拿空 token 去认证，直接 `ENEEDAUTH`／`EOTP`，根本走不到 OIDC。workflow 里那步「Drop the token placeholder」就是干这个的。
+- Node 22 自带的 npm 太旧，认不了 OIDC，所以先 `npm install -g npm@latest`。
 
 也可以手动跑：
 
@@ -247,7 +251,7 @@ GitHub Actions 被账号账单锁住时，用同等的本地钩子：
 git config core.hooksPath .githooks
 ```
 
-之后 `git push` 到 `main` 会自动跑 [`.githooks/pre-push`](.githooks/pre-push)：版本号没变就什么都不做；变了解析 `CHANGELOG.md`、打 `v<version>` 标签、建 Release、发 npm。单次跳过用 `SKIP_RELEASE_HOOK=1 git push`。
+之后 `git push` 到 `main` 会自动跑 [`.githooks/pre-push`](.githooks/pre-push)：版本号没变就什么都不做；变了解析 `CHANGELOG.md`、打 `v<version>` 标签、建 Release，**npm 那一步留给 Actions**（本地没有 OIDC 身份，发不了）。单次跳过用 `SKIP_RELEASE_HOOK=1 git push`；真要在这台机器上发，用 `LOCAL_RELEASE=1 git push`，npm 会走浏览器确认。
 
 ## 📄 协议
 

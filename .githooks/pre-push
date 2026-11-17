@@ -1,11 +1,17 @@
 #!/bin/sh
-# Release hook: push to main -> tag -> GitHub release -> npm publish.
-# Mirrors .github/workflows/release.yml for machines where Actions is unavailable.
+# Release hook: push to main -> tag -> GitHub release, then npm via Actions.
+#
+# Publishing moved to GitHub Actions with trusted publishing (OIDC), so there is
+# no token to keep in this repo and no 2FA prompt nobody can answer. This hook
+# only does the half that Actions cannot: it refuses to push a version bump whose
+# CHANGELOG section is missing, and it creates the tag so the release has one.
 #
 # Install once per clone:
 #   git config core.hooksPath .githooks
 #
 # Skip a single push with:  SKIP_RELEASE_HOOK=1 git push
+# Publish from this machine instead of Actions (needs an interactive 2FA login):
+#   LOCAL_RELEASE=1 git push
 set -e
 
 if [ -n "$SKIP_RELEASE_HOOK" ]; then
@@ -56,10 +62,14 @@ else
   echo "[release] gh not found, skipped the GitHub release"
 fi
 
-if npm publish --access public; then
-  echo "[release] published $(node -p "require('./package.json').name")@$version to npm"
+if [ -n "$LOCAL_RELEASE" ]; then
+  if npm publish --access public; then
+    echo "[release] published $(node -p "require('./package.json').name")@$version to npm"
+  else
+    echo "[release] npm publish failed; let Actions do it, or finish the browser prompt above." >&2
+  fi
 else
-  echo "[release] npm publish failed. A two-factor account needs a token with Bypass 2FA." >&2
+  echo "[release] npm publish is left to the Release workflow (trusted publishing)."
 fi
 
 rm -f "$notes"

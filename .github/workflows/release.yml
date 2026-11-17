@@ -20,8 +20,6 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +29,10 @@ jobs:
         with:
           node-version: '22'
           registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs a recent npm; the one bundled with Node 22 is too old.
+      - name: Use a npm that speaks OIDC
+        run: npm install -g npm@latest
 
       - name: Read version and tag state
         id: meta
@@ -77,11 +79,18 @@ jobs:
               --verify-tag
           fi
 
-      - name: Publish to npm
-        if: (steps.meta.outputs.exists == 'false' || inputs.force) && env.NODE_AUTH_TOKEN != ''
-        run: npm publish --access public --provenance
-
-      - name: Note the skipped npm publish
-        if: (steps.meta.outputs.exists == 'false' || inputs.force) && env.NODE_AUTH_TOKEN == ''
+      # setup-node writes an _authToken line into .npmrc. Leaving it there makes npm
+      # authenticate with an empty token instead of exchanging the OIDC identity, which
+      # fails as EOTP/ENEEDAUTH. Strip it so trusted publishing is the only path used.
+      - name: Drop the token placeholder so OIDC is used
+        if: steps.meta.outputs.exists == 'false' || inputs.force
         run: |
-          echo "::notice::NPM_TOKEN is not configured; skipped npm publish. Add a Granular Access Token with Bypass 2FA as the NPM_TOKEN secret to enable it."
+          if [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+            grep -v '_authToken' "$NPM_CONFIG_USERCONFIG" > "$RUNNER_TEMP/npmrc" || true
+            mv "$RUNNER_TEMP/npmrc" "$NPM_CONFIG_USERCONFIG"
+          fi
+          echo "npm $(npm --version) on node $(node --version)"
+
+      - name: Publish to npm with trusted publishing
+        if: steps.meta.outputs.exists == 'false' || inputs.force
+        run: npm publish --access public
