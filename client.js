@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.0';
+    const VERSION = '1.6.1';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -883,7 +883,16 @@ window.__ModuleLoader__.load({
         toolExpandable: tools.filter(row => row.querySelector('[data-disclosure-row][aria-expanded]') !== null).length,
         command: all('[data-variant="others"]').length,
         context: all('[data-context-injection-body]').length,
+        pinned: scrollCensus().pinned,
+        jumps: scrollCensus().jumps,
       };
+    }
+
+    function scrollCensus() {
+      const scroller = document.querySelector('[data-conversation-scroll]');
+      const state = scroller === null ? undefined : pinStates.get(scroller);
+      if (state === undefined) return { pinned: false, jumps: 0 };
+      return { pinned: state.pinned, jumps: state.jumps };
     }
 
     function Preview(props) {
@@ -1217,7 +1226,7 @@ window.__ModuleLoader__.load({
         ),
         h(
           Group,
-          { title: '诊断', badge: `v${VERSION}`, count: 9, defaultOpen: false },
+          { title: '诊断', badge: `v${VERSION}`, count: 11, defaultOpen: false },
           h('p', { className: 'dte-hint' }, '这些是插件此刻在页面上实际看到的行。若「工具块」有行但「可展开」为 0，说明上游还没给出可展开的内容；若「已展开」始终为 0 而「运行中」大于 0，说明点击没有落到展开控件上。'),
           h(
             'div',
@@ -1232,6 +1241,8 @@ window.__ModuleLoader__.load({
               ['工具可展开', census.toolExpandable],
               ['命令卡', census.command],
               ['上下文注入', census.context],
+              ['贴底中', census.pinned ? '是' : '否'],
+              ['拉回次数', census.jumps],
             ].map(([label, value]) =>
               h(
                 'div',
@@ -1320,22 +1331,53 @@ window.__ModuleLoader__.load({
         function pinStateOf(scroller) {
           const known = pinStates.get(scroller);
           if (known !== undefined) return known;
-          const state = { pinned: atBottom(scroller), programmatic: false };
+          const state = {
+            pinned: atBottom(scroller),
+            programmatic: false,
+            lastTop: scroller.scrollTop,
+            gestureAt: 0,
+            jumps: 0,
+          };
           pinStates.set(scroller, state);
           scroller.addEventListener('scroll', () => {
+            const top = scroller.scrollTop;
             if (state.programmatic) {
               state.programmatic = false;
+              state.lastTop = top;
+              return;
+            }
+            // The viewport can be thrown above the tail by something other than
+            // the reader: a spacer reclaimed under the floor, history pruned
+            // above it, a fold that shrank the content. While pinned, content
+            // growth only ever moves `scrollTop` down, so any upward movement is
+            // not the reader and gets undone.
+            const jumped = state.pinned
+              && top < state.lastTop - 2
+              && Date.now() - state.gestureAt > 600;
+            state.lastTop = top;
+            if (jumped) {
+              state.jumps += 1;
+              state.programmatic = true;
+              scroller.scrollTop = scroller.scrollHeight;
+              state.lastTop = scroller.scrollTop;
               return;
             }
             state.pinned = atBottom(scroller);
           }, { passive: true });
           const release = () => {
             state.pinned = false;
+            state.gestureAt = Date.now();
           };
           scroller.addEventListener('wheel', release, { passive: true });
           scroller.addEventListener('touchmove', release, { passive: true });
+          // Only the scrollbar strip counts: a pointerdown on a row is a click on
+          // that row, not the reader taking over the viewport.
+          scroller.addEventListener('pointerdown', (event) => {
+            const rect = scroller.getBoundingClientRect();
+            if (event.clientX - rect.left >= scroller.clientWidth) release();
+          }, { passive: true });
           scroller.addEventListener('keydown', (event) => {
-            if (SCROLL_KEYS.has(event.key)) state.pinned = false;
+            if (SCROLL_KEYS.has(event.key)) release();
           });
           return state;
         }
@@ -1348,6 +1390,7 @@ window.__ModuleLoader__.load({
           if (floor - scroller.scrollTop <= 1) return;
           state.programmatic = true;
           scroller.scrollTop = floor;
+          state.lastTop = scroller.scrollTop;
         }
 
         function holdTail(scroller) {
