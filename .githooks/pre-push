@@ -1,0 +1,61 @@
+#!/bin/sh
+# Release hook: push to main -> tag -> GitHub release -> npm publish.
+# Mirrors .github/workflows/release.yml for machines where Actions is unavailable.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# Skip a single push with:  SKIP_RELEASE_HOOK=1 git push
+set -e
+
+[ -n "$SKIP_RELEASE_HOOK" ] && exit 0
+# The tag push below re-enters this hook; guard against the recursion.
+[ -n "DLS_RELEASE_HOOK" ] && exit 0
+export DLS_RELEASE_HOOK=1
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+[ "$branch" = "main" ] || exit 0
+
+version=$(node -p "require('./package.json').version")
+tag="v$version"
+
+if git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1; then
+  echo "[release] $tag already tagged locally, nothing to do"
+  exit 0
+fi
+
+if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+  echo "[release] $tag already tagged on origin, nothing to do"
+  exit 0
+fi
+
+notes=$(mktemp)
+if ! node .github/scripts/changelog-section.mjs "$version" > "$notes"; then
+  echo "[release] CHANGELOG.md has no usable section for $version; refusing to tag" >&2
+  rm -f "$notes"
+  exit 1
+fi
+
+git tag -a "$tag" -m "$tag"
+echo "[release] tagged $tag"
+
+git push origin "$tag"
+echo "[release] pushed $tag"
+
+if command -v gh >/dev/null 2>&1; then
+  if gh release create "$tag" --title "$tag" --notes-file "$notes" --verify-tag; then
+    echo "[release] GitHub release $tag created"
+  else
+    echo "[release] GitHub release failed; the tag is still pushed" >&2
+  fi
+else
+  echo "[release] gh not found, skipped the GitHub release"
+fi
+
+if npm publish --access public; then
+  echo "[release] published $(node -p "require('./package.json').name")@$version to npm"
+else
+  echo "[release] npm publish failed. A two-factor account needs a token with Bypass 2FA." >&2
+fi
+
+rm -f "$notes"

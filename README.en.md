@@ -237,6 +237,16 @@ You can also run it by hand:
 gh workflow run release.yml -f force=true
 ```
 
+### Local releasing without Actions
+
+When GitHub Actions is blocked by account billing, the same flow runs from a local hook:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+From then on a `git push` to `main` runs [`.githooks/pre-push`](.githooks/pre-push): it does nothing when the version did not change, and otherwise reads `CHANGELOG.md`, tags `v<version>`, creates the release and publishes to npm. Skip one push with `SKIP_RELEASE_HOOK=1 git push`.
+
 ## 📄 License
 
 [MIT](LICENSE) © 2026 cstcood

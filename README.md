@@ -237,6 +237,16 @@ python docs/make-shots.py
 gh workflow run release.yml -f force=true
 ```
 
+### 不依赖 Actions 的本地发布
+
+GitHub Actions 被账号账单锁住时，用同等的本地钩子：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+之后 `git push` 到 `main` 会自动跑 [`.githooks/pre-push`](.githooks/pre-push)：版本号没变就什么都不做；变了解析 `CHANGELOG.md`、打 `v<version>` 标签、建 Release、发 npm。单次跳过用 `SKIP_RELEASE_HOOK=1 git push`。
+
 ## 📄 协议
 
 [MIT](LICENSE) © 2026 cstcood
