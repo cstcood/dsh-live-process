@@ -99,8 +99,9 @@ jobs:
       # A second copy on GitHub Packages, so the plugin can be installed without ever
       # talking to the public npm registry. publishConfig.registry outranks --registry,
       # so the field itself is repointed for this one publish and restored afterwards.
+      # Runs even when the npm step above failed: the two registries are independent.
       - name: Publish to GitHub Packages
-        if: steps.meta.outputs.exists == 'false' || inputs.force
+        if: always() && (steps.meta.outputs.exists == 'false' || inputs.force)
         env:
           GH_PACKAGES_TOKEN: ${{ github.token }}
         run: |
