@@ -8,9 +8,13 @@
 # Skip a single push with:  SKIP_RELEASE_HOOK=1 git push
 set -e
 
-[ -n "$SKIP_RELEASE_HOOK" ] && exit 0
+if [ -n "$SKIP_RELEASE_HOOK" ]; then
+  exit 0
+fi
 # The tag push below re-enters this hook; guard against the recursion.
-[ -n "DLS_RELEASE_HOOK" ] && exit 0
+if [ -n "$DLS_RELEASE_HOOK" ]; then
+  exit 0
+fi
 export DLS_RELEASE_HOOK=1
 
 branch=$(git rev-parse --abbrev-ref HEAD)
