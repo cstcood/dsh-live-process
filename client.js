@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.4';
+    const VERSION = '1.6.5';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -103,6 +103,7 @@ window.__ModuleLoader__.load({
         on: true,
         foldable: true,
         leaf: true,
+        timed: true,
         rows: () => document.querySelectorAll('[data-variant="think"]'),
         live: row => row.getAttribute('data-state') === 'running',
       },
@@ -151,6 +152,7 @@ window.__ModuleLoader__.load({
         on: true,
         foldable: true,
         leaf: true,
+        timed: true,
         // The injection body only exists while the row is open, so it cannot be
         // used to find the row: a collapsed row would never be discovered and
         // therefore never opened. Locate the seat by node kind instead, then take
@@ -1201,7 +1203,7 @@ window.__ModuleLoader__.load({
                 h(
                   'span',
                   { className: 'dte-row-hint' },
-                  '工具行与命令卡的标题后显示运行时长，运行中实时递增，结束后定格。',
+                  '过程行标题后显示运行时长（工具、命令、思考、上下文注入），运行中实时递增，结束后定格。',
                 ),
               ),
               h(Switch, {
@@ -1576,7 +1578,7 @@ window.__ModuleLoader__.load({
           return badge;
         }
 
-        function tickTimer(row) {
+        function tickTimer(row, def) {
           if (!config.showTimer) return;
           if (historic.has(row)) {
             const header = row.querySelector('[data-disclosure-header]');
@@ -1584,8 +1586,11 @@ window.__ModuleLoader__.load({
             if (stale !== null) stale.remove();
             return;
           }
+          // A context row carries no `data-state`, and a reasoning row's own
+          // running flag is the row's live signal, so the block definition owns
+          // the verdict whenever it has one.
           const state = row.getAttribute('data-state');
-          const live = state === 'running' || state === 'preparing';
+          const live = def !== undefined ? def.live(row) : state === 'running' || state === 'preparing';
           let start = startedAt.get(row);
           if (start === undefined) {
             // A row first seen already settled has no observable start: the work
@@ -1725,7 +1730,7 @@ window.__ModuleLoader__.load({
           });
           const lastLeaf = leaves.length > 0 ? leaves[leaves.length - 1] : null;
           for (const { def, rows } of collected) {
-            if (def.timed) for (const row of rows) tickTimer(row);
+            if (def.timed) for (const row of rows) tickTimer(row, def);
             if (!def.foldable) continue;
             const override = config.modes[def.key];
             const blockMode = override === 'inherit' ? config.foldMode : override;

@@ -8,11 +8,11 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.4-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.5-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
-> **当前版本 `1.6.4`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
+> **当前版本 `1.6.5`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
 > 不接管渲染，只驱动上游自己的展开控件——所以升级 DSH 后通常无需改插件。
 
 </div>
@@ -44,7 +44,7 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 - **🎨 十二类块可分别配色** — 思考、工具、命令卡、上下文注入、压缩标记、过程组、轮次尾部、用户气泡、运行状态、队列、待办、引导消息。
 - **📐 样式参数可调** — 左侧色条宽度、圆角、上下/右/左内边距、运行态底色浓度、字号、字体族。
 - **⚡ 改动立即生效** — 配置存在浏览器 `localStorage`，不用重启 Host，不用重装插件。
-- **⏱️ 耗时徽章** — 工具行和命令卡的标题后显示运行时长，运行中实时递增，结束后定格。历史行不显示，不编造数字。
+- **⏱️ 耗时徽章** — 工具行、命令卡、思考行和上下文注入行的标题后显示运行时长，运行中实时递增，结束后定格。历史行不显示，不编造数字。
 - **🕗 折叠时机可选** — 「下一条出现时」（默认）让结束的行保持展开，等下一行过程出现才折叠；也可以选「结束即折叠」。一轮以正文收尾时，最后一条过程行是否折叠单独一个开关。
 - **📌 贴底跟随** — 运行中视口被上游甩回上方（预留空间收回、历史裁剪、折叠变矮）时立刻拉回底部；只有滚轮、触摸、翻页键和滚动条拖拽才算你接管。
 - **🔍 内置诊断** — 设置页底部实时显示插件在页面上实际看到的行数、可展开数、已展开数、贴底状态与拉回次数，出问题时不用猜。
@@ -66,7 +66,7 @@ plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.6.4"
+    "@cstcood/dsh-live-process": "^1.6.5"
   }
 }
 ```
@@ -134,13 +134,13 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 | | 结束即折叠 | 一行停止运行就立刻折叠 |
 | 最后一步是正文时折叠 | 关（默认） | 最后一条过程行后面没有过程行了，就一直展开着 |
 | | 开 | 它后面没有过程行时也折叠 |
-| 显示耗时 | 开（默认） | 工具行与命令卡标题后显示运行时长 |
+| 显示耗时 | 开（默认） | 工具行、命令卡、思考行与上下文注入行标题后显示运行时长 |
 
 「最后一步是正文」指一轮以助手正文收尾：最后一条过程行之后不会再有过程行，`下一条出现时` 永远等不到触发，所以单独给一个开关。
 
 ### 耗时
 
-工具行和命令卡的标题后面会跟一个耗时徽章：运行中实时递增，结束后定格。
+工具行、命令卡、思考行和上下文注入行的标题后面会跟一个耗时徽章：运行中实时递增，结束后定格。
 
 - 起点是该行第一次出现在 DOM 里的时刻（通常是 `preparing`），终点是 `data-state` 落到 `ok` / `error` / `stopped` 的时刻。
 - 页面加载时已经在屏上的历史行不显示耗时——它们的真实起点无从得知，与其编一个不如不显示。
@@ -156,7 +156,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
   "foldMode": "auto",          // auto | expand | collapse | off
   "foldTiming": "onNext",      // onNext | onEnd
   "foldLast": false,           // 最后一条过程行后面没有过程行时是否折叠
-  "showTimer": true,           // 工具行与命令卡标题后显示耗时
+  "showTimer": true,           // 过程行标题后显示耗时
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // 每块覆盖，inherit 表示跟随 foldMode
     "think": "inherit",
