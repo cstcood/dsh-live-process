@@ -2,6 +2,8 @@
 
 ## 1.4.0
 
+- 更名为 **dsh-live-process**（包名 `@cstcood/dsh-live-process`）：原 `dsh-think-expand` 与 npm 上 BrianHIO-x 的同名插件冲突。模块 id、bundle id、设置页 slot id 同步改名；`localStorage` 键由 `dsh-think-expand:config` 变为 `dsh-live-process:config`，旧配置不再读取，首次打开为默认值。
+
 - 修复工具行在运行中不展开：`DisclosureRow` 的 `aria-expanded` / `role` / `onClick` 只在 `expandable` 为真时存在，`preparing` 阶段整行没有可点控件。改为读 `data-open` 判断展开状态，找不到控件时不记录「已处理」，等行进入 `running` 再点。
 - 驱动改为每 `(行, data-state, 意图)` 只点一次，消除「点开又点回去」的抖动。
 - 展开后补滚到底（`holdTail`），修复运行中视口离开底部、需要手动切回的问题。
