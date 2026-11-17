@@ -31,9 +31,9 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 
 > One caveat: upstream DSH deliberately does not let extensions replace the reasoning preview or the expand strategy (`dsh-client-ui-chat/README.zh.md`). So this plugin does not take over rendering — it drives upstream's own disclosure controls. See [How it works](#-how-it-works).
 
-![Process blocks in the dark theme](docs/screenshots/transcript-dark.png)
+![Process blocks in the dark theme](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-dark.png)
 
-![Process blocks in the light theme](docs/screenshots/transcript-light.png)
+![Process blocks in the light theme](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-light.png)
 
 ## ✨ Features
 
@@ -46,13 +46,31 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 - **⚡ Instant effect** — configuration lives in browser `localStorage`; no Host restart, no reinstall.
 - **🔍 Built-in diagnostics** — the settings page reports how many rows the plugin actually sees, how many are expandable, and how many are open.
 
-![Settings page](docs/screenshots/settings.png)
+![Settings page](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/settings.png)
 
 ## 📦 Install
 
 The plugin ships as a DSH bundle and requires the DSH Web UI (`dsh.client.platform` is `web`).
 
-### Via plugin_manager
+### From npm (recommended)
+
+```text
+plugin_manager install_bundle target=@cstcood/dsh-think-expand
+```
+
+Or add it to the profile `package.json` by hand:
+
+```json
+{
+  "dependencies": {
+    "@cstcood/dsh-think-expand": "^1.4.0"
+  }
+}
+```
+
+Then append `"@cstcood/dsh-think-expand"` to `dsh.profile.bundles` and restart DSH.
+
+### From a local directory
 
 ```text
 plugin_manager install_bundle target=<absolute path to this repo>

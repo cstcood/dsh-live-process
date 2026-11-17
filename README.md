@@ -31,9 +31,9 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 
 > 顺带说一句：DSH 上游明确不打算让扩展替换思考预览与展开策略（`dsh-client-ui-chat/README.zh.md`：「扩展不替换思考预览或展开策略。」）。所以这里没有走「改渲染」的路，而是驱动上游自己的展开控件——见[工作原理](#-工作原理)。
 
-![暗色主题下的过程块](docs/screenshots/transcript-dark.png)
+![暗色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-dark.png)
 
-![浅色主题下的过程块](docs/screenshots/transcript-light.png)
+![浅色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-light.png)
 
 ## ✨ 特性
 
@@ -46,13 +46,31 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 - **⚡ 改动立即生效** — 配置存在浏览器 `localStorage`，不用重启 Host，不用重装插件。
 - **🔍 内置诊断** — 设置页底部实时显示插件在页面上实际看到的行数、可展开数、已展开数，出问题时不用猜。
 
-![设置页](docs/screenshots/settings.png)
+![设置页](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/settings.png)
 
 ## 📦 安装
 
 插件以 DSH bundle 的形式发布，需要 DSH 的 Web 界面（`dsh.client.platform` 为 `web`）。
 
-### 用 plugin_manager 安装
+### 从 npm 安装（推荐）
+
+```text
+plugin_manager install_bundle target=@cstcood/dsh-think-expand
+```
+
+或手动写进 profile 的 `package.json`：
+
+```json
+{
+  "dependencies": {
+    "@cstcood/dsh-think-expand": "^1.4.0"
+  }
+}
+```
+
+然后在 `dsh.profile.bundles` 末尾追加 `"@cstcood/dsh-think-expand"`，重启 DSH。
+
+### 从本地目录安装
 
 ```text
 plugin_manager install_bundle target=<本仓库的绝对路径>
