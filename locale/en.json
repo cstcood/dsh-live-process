@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Live process blocks",
+    "description": "Opens a thinking block or a tool call while it is running and folds it back once it settles, so the transcript follows the work as it happens. Thinking blocks and execution blocks get separate accent bars and backgrounds so the two read as different kinds of card. Rows you open yourself stay open."
+  }
+}

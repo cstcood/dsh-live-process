@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-think-expand
+      name: '@local/dsh-think-expand'
