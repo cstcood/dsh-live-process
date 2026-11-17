@@ -8,11 +8,11 @@
 
 ### Unfold the process the moment it happens
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.3-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.4-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
-> **Current version `1.6.3`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> **Current version `1.6.4`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
 > It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
 
 </div>
@@ -66,7 +66,7 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.6.3"
+    "@cstcood/dsh-live-process": "^1.6.4"
   }
 }
 ```

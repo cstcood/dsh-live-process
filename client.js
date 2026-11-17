@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.6.3';
+    const VERSION = '1.6.4';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -622,6 +622,8 @@ window.__ModuleLoader__.load({
 .dte-diag { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; }
 .dte-diag-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .dte-diag-row .dte-val { font-size: 12px; color: var(--dsw-alias-label-primary); }
+.dte-diag-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.dte-diag-line { display: block; padding: 8px 10px; border-radius: 6px; background: var(--dsw-alias-bg-module-platform); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: var(--dsw-alias-label-secondary); }
 .dte-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; }
 .dte-preview { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; background: var(--dsw-alias-bg-module-platform); }
 .dte-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -875,6 +877,19 @@ window.__ModuleLoader__.load({
         return flagged !== null && flagged.getAttribute('aria-expanded') === 'true';
       }).length;
       const tools = all('[data-tool]');
+      // Per-row detail for the newest tool rows: which tool, what state it is in,
+      // whether it exposes a disclosure control at all, and whether that control
+      // reports open. That triple is the whole expand decision, so printing it
+      // turns "it does not expand" into a concrete failing term.
+      const detail = tools.slice(-10).map(row => {
+        const name = row.getAttribute('data-tool') ?? '?';
+        const state = row.getAttribute('data-state') ?? '?';
+        const hasControl = row.querySelector('[data-disclosure-row][aria-expanded]') !== null;
+        const header = row.querySelector('[data-disclosure-header]');
+        const root = header === null ? null : header.parentElement;
+        const open = root !== null && root.hasAttribute('data-open');
+        return `${name} ${state} ${hasControl ? (open ? '开' : '关') : '无控件'}`;
+      });
       return {
         think: all('[data-variant="think"]').length,
         thinkOpen: opened('[data-variant="think"]'),
@@ -887,6 +902,7 @@ window.__ModuleLoader__.load({
         context: all('[data-context-injection-body]').length,
         pinned: scrollCensus().pinned,
         jumps: scrollCensus().jumps,
+        detail: detail.join(' · '),
       };
     }
 
@@ -995,6 +1011,7 @@ window.__ModuleLoader__.load({
           context: 0,
           pinned: false,
           jumps: 0,
+          detail: '',
         };
       }
     }
@@ -1366,6 +1383,12 @@ window.__ModuleLoader__.load({
               ),
             ),
           ),
+          h(
+            'div',
+            { className: 'dte-diag-detail' },
+            h('span', { className: 'dte-row-label' }, '最近工具行的真实状态'),
+            h('code', { className: 'dte-diag-line' }, census.detail === '' ? '（当前没有工具行）' : census.detail),
+          ),
         ),
         h(
           'div',
@@ -1409,6 +1432,7 @@ window.__ModuleLoader__.load({
         // pending state straight back off. Firing once per state transition keeps
         // the click authoritative and lets the row's own state change re-arm it.
         const fired = new WeakMap();
+        const retries = new WeakMap();
         const rowMode = new WeakMap();
         const timers = new Set();
         let frame = 0;
@@ -1615,8 +1639,11 @@ window.__ModuleLoader__.load({
           const target = control(row);
           if (target === null) return;
           const scroller = scrollerOf(row);
+          // Only re-pin when the reader was already at the tail: expanding a row
+          // from a scrolled-up position must not yank them to the bottom.
+          const pinned = scroller !== null && atBottom(scroller);
           target.click();
-          if (scroller !== null) holdTail(scroller);
+          if (pinned) holdTail(scroller);
         }
 
         function driveRow(row, def, mode, isLast) {
@@ -1624,10 +1651,12 @@ window.__ModuleLoader__.load({
           if (lastState.get(row) !== stateNow) {
             lastState.set(row, stateNow);
             fired.delete(row);
+            retries.delete(row);
           }
           if (rowMode.get(row) !== mode) {
             rowMode.set(row, mode);
             fired.delete(row);
+            retries.delete(row);
           }
           let want;
           if (mode === 'auto') {
@@ -1647,7 +1676,18 @@ window.__ModuleLoader__.load({
             want = mode === 'expand';
           }
           const record = fired.get(row);
-          if (record !== undefined && record.state === stateNow && record.want === want) return;
+          if (record !== undefined && record.state === stateNow && record.want === want) {
+            if (isOpen(row) === want) return;
+            // The row reports the opposite of what we just asked for. Chat binds
+            // every disclosure to a reset source that clears the open state when
+            // the node is re-routed, so a single click can be undone a frame
+            // later. Retry a bounded number of times instead of giving up on the
+            // first reversal.
+            const tries = (retries.get(row) ?? 0) + 1;
+            if (tries > 6) return;
+            retries.set(row, tries);
+            fired.delete(row);
+          }
           // A row that cannot open yet exposes no disclosure control at all. Leave
           // the intent unrecorded so the next sweep retries once the row grows one.
           if (control(row) === null) return;
