@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.2
+
+- 发布通道改用 npm Trusted Publishing：workflow 拿 `id-token: write` 向 npm 换短期凭据，仓库里不再存任何 token。`setup-node` 写进 `.npmrc` 的空 `_authToken` 行会被删掉——留着它，npm 会先拿空 token 去认证，直接死在 OIDC 之前；Node 22 自带的 npm 也认不了 OIDC，所以先升到最新版。
+- 本地 `pre-push` 钩子不再发 npm，只打标签和建 Release；真要在这台机器发用 `LOCAL_RELEASE=1`。
+- 1.7.1 在 npm 上被一次中断的暂存发布占住了版本号，从未真正上架，因此本次直接跳到 1.7.2，内容与 1.7.1 相同。
+
 ## 1.7.1
 
 - README 开头直接讲耗时徽章：思考推了多久、命令跑了多久、工具调用卡了几秒，都写在标题后面，不用切到轨迹页翻「请求 #55 · 总时长 3.07 秒」。

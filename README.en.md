@@ -12,7 +12,7 @@
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
-> **Current version `1.7.1`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> **Current version `1.7.2`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
 > It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
 
 </div>
@@ -69,7 +69,7 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.7.1"
+    "@cstcood/dsh-live-process": "^1.7.2"
   }
 }
 ```
