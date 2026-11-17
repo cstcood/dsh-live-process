@@ -8,7 +8,7 @@
 
 ### 让过程在产生的那一刻就摊开
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH 适配](https://img.shields.io/badge/DSH-0.2.2--rc.3%20%E5%B7%B2%E9%AA%8C%E8%AF%81-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
@@ -115,7 +115,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 | 折叠规则 | 全局四档 + 折叠时机 + 最后一步是否折叠，常驻显示 |
 | 过程块 | 思考、工具、命令卡、上下文注入、压缩标记、过程组 |
 | 其他块 | 轮次尾部、用户气泡、运行状态、队列、待办、引导消息 |
-| 通用 | 字体族、运行态浓度、色条宽度、圆角、三向内边距 |
+| 通用 | 显示耗时、字体族、运行态浓度、色条宽度、圆角、三向内边距 |
 | 预览 | 当前色板下所有启用块的实际效果 |
 | 诊断 | 实时行数统计与插件版本 |
 
@@ -134,6 +134,15 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
 
 「最后一步是正文」指一轮以助手正文收尾：最后一条过程行之后不会再有过程行，`下一条出现时` 永远等不到触发，所以单独给一个开关。
 
+### 耗时
+
+工具行和命令卡的标题后面会跟一个耗时徽章：运行中实时递增，结束后定格。
+
+- 起点是该行第一次出现在 DOM 里的时刻（通常是 `preparing`），终点是 `data-state` 落到 `ok` / `error` / `stopped` 的时刻。
+- 页面加载时已经在屏上的历史行不显示耗时——它们的真实起点无从得知，与其编一个不如不显示。
+- 不足一秒显示 `ms`，一分钟内显示 `s`（一位小数），再长显示 `m` + `s`。
+- 在 设置 → 过程块样式 → 通用 里可以关掉。
+
 ## ⚙️ 配置结构
 
 `localStorage` 键：`dsh-live-process:config`
@@ -143,6 +152,7 @@ plugin_manager set_plugin target=include:dsh-live-process enabled=true
   "foldMode": "auto",          // auto | expand | collapse | off
   "foldTiming": "onNext",      // onNext | onEnd
   "foldLast": false,           // 最后一条过程行后面没有过程行时是否折叠
+  "showTimer": true,           // 工具行与命令卡标题后显示耗时
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // 每块覆盖，inherit 表示跟随 foldMode
     "think": "inherit",

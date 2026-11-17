@@ -8,7 +8,7 @@
 
 ### Unfold the process the moment it happens
 
-![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.5.1-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.3%20verified-4E9BF1)![Platform](https://img.shields.io/badge/Platform-Web-8b7cf6)![Version](https://img.shields.io/badge/Version-1.6.0-2f9e6e)![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
@@ -115,7 +115,7 @@ Open Settings → **Process block styles**.
 | Fold rule | The four global modes, the fold timing and the last-row switch, always visible |
 | Process blocks | Thinking, tools, command cards, context injection, compaction, process groups |
 | Other blocks | Turn tail, user bubble, running status, queue, todos, steering |
-| Common | Font family, running tint, bar width, radius, three paddings |
+| Common | Elapsed time, font family, running tint, bar width, radius, three paddings |
 | Preview | Live rendering of every enabled block in the current palette |
 | Diagnostics | Live row counts and plugin version |
 
@@ -134,6 +134,15 @@ Under the `auto` mode, when a finished row folds is decided by two settings:
 
 "Last row" means a turn that ends with assistant prose: no process row will ever follow, so `on next row` would wait forever. That is why it gets its own switch.
 
+### Elapsed time
+
+Tool rows and command cards carry an elapsed badge after their title: it counts up while the row runs and freezes when it settles.
+
+- The start is the moment the row first appears in the DOM (usually `preparing`); the end is when `data-state` lands on `ok` / `error` / `stopped`.
+- Rows already on screen when the page loaded get no badge — their real start is unknowable, and a made-up number is worse than none.
+- Under a second it reads `ms`, under a minute `s` with one decimal, beyond that `m` + `s`.
+- Turn it off under Settings → Process block styles → Common.
+
 ## ⚙️ Configuration
 
 `localStorage` key: `dsh-live-process:config`
@@ -143,6 +152,7 @@ Under the `auto` mode, when a finished row folds is decided by two settings:
   "foldMode": "auto",          // auto | expand | collapse | off
   "foldTiming": "onNext",      // onNext | onEnd
   "foldLast": false,           // fold the last row when nothing follows it
+  "showTimer": true,           // elapsed badge on tool rows and command cards
   "schemeMode": "auto",        // auto | dark | light
   "modes": {                   // per-block override, inherit follows foldMode
     "think": "inherit",

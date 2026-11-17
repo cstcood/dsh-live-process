@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 
     const RETRY_MS = 400;
     const MAX_ATTEMPTS = 4;
-    const VERSION = '1.5.1';
+    const VERSION = '1.6.0';
     const STYLE_ID = 'dsh-live-process-blocks';
     const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
@@ -116,6 +116,7 @@ window.__ModuleLoader__.load({
         on: true,
         foldable: true,
         leaf: true,
+        timed: true,
         rows: () => [...document.querySelectorAll('[data-tool]')]
           .filter(row => row.parentElement?.closest('[data-tool]') === null),
         live: row => {
@@ -133,6 +134,7 @@ window.__ModuleLoader__.load({
         on: true,
         foldable: true,
         leaf: true,
+        timed: true,
         rows: () => document.querySelectorAll('[data-variant="others"]:not([data-tool])'),
         live: row => {
           const state = row.getAttribute('data-state');
@@ -324,6 +326,7 @@ window.__ModuleLoader__.load({
         foldMode: 'auto',
         foldTiming: 'onNext',
         foldLast: false,
+        showTimer: true,
         schemeMode: 'auto',
         modes: Object.fromEntries(BLOCK_DEFS.map(def => [def.key, 'inherit'])),
         schemes: { dark: defaultScheme('dark'), light: defaultScheme('light') },
@@ -332,6 +335,7 @@ window.__ModuleLoader__.load({
       if (FOLD_MODES.some(mode => mode.id === raw.foldMode)) out.foldMode = raw.foldMode;
       if (FOLD_TIMINGS.some(mode => mode.id === raw.foldTiming)) out.foldTiming = raw.foldTiming;
       if (typeof raw.foldLast === 'boolean') out.foldLast = raw.foldLast;
+      if (typeof raw.showTimer === 'boolean') out.showTimer = raw.showTimer;
       if (SCHEME_MODES.some(mode => mode.id === raw.schemeMode)) out.schemeMode = raw.schemeMode;
 
       // v1 stored one palette at the top level: copy it into both schemes.
@@ -480,6 +484,23 @@ window.__ModuleLoader__.load({
     }
 
     // ------------------------------------------------------- settings page CSS
+
+    const TIMER_CSS = `
+.dte-timer {
+  margin-left: 8px;
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.dte-timer[data-live="true"] {
+  color: var(--dsw-alias-state-business-primary);
+  opacity: 1;
+}
+`;
 
     const SETTINGS_CSS = `
 .dte-page { display: flex; flex-direction: column; gap: 12px; padding: 2px 0 28px; }
@@ -1075,7 +1096,24 @@ window.__ModuleLoader__.load({
         ),
         h(
           Group,
-          { title: '通用', badge: schemeLabel, count: 6, defaultOpen: false },
+          { title: '通用', badge: schemeLabel, count: 7, defaultOpen: false },
+          h(
+            Row,
+            null,
+            h(
+              'div',
+              { className: 'dte-row-main' },
+              h('span', { className: 'dte-row-label' }, '显示耗时'),
+              h('span', { className: 'dte-row-hint' }, '在工具行与命令卡标题后显示运行时长，运行中实时递增。'),
+            ),
+            h(Switch, {
+              checked: current.showTimer,
+              title: '显示耗时',
+              onChange: value => {
+                update({ showTimer: value });
+              },
+            }),
+          ),
           h(
             Row,
             null,
@@ -1323,6 +1361,69 @@ window.__ModuleLoader__.load({
         }
 
         /**
+         * A tool row carries no timing of its own: `data-state` flips from
+         * preparing/running to a settled value and nothing records when. The badge
+         * goes into the disclosure header, which React does not rebuild on a state
+         * change, and is re-created if it ever disappears.
+         */
+        const startedAt = new WeakMap();
+        const settledAt = new WeakMap();
+        const badgeText = new WeakMap();
+
+        function formatElapsed(ms) {
+          if (ms < 1000) return `${Math.round(ms)}ms`;
+          if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+          const minutes = Math.floor(ms / 60000);
+          const seconds = Math.round((ms % 60000) / 1000);
+          return `${minutes}m${seconds}s`;
+        }
+
+        function badgeOf(row) {
+          const header = row.querySelector('[data-disclosure-header]');
+          if (header === null) return null;
+          const known = header.querySelector(':scope > .dte-timer');
+          if (known !== null) return known;
+          const badge = document.createElement('span');
+          badge.className = 'dte-timer';
+          header.appendChild(badge);
+          return badge;
+        }
+
+        function tickTimer(row) {
+          if (!config.showTimer) return;
+          const state = row.getAttribute('data-state');
+          const live = state === 'running' || state === 'preparing';
+          let start = startedAt.get(row);
+          if (start === undefined) {
+            // Rows already settled when the page loaded are history: their real
+            // start is unknown, so they get no badge rather than a made-up one.
+            if (!live && !primed) return;
+            start = Date.now();
+            startedAt.set(row, start);
+          }
+          let elapsed;
+          if (live) {
+            elapsed = Date.now() - start;
+          } else {
+            let end = settledAt.get(row);
+            if (end === undefined) {
+              end = Date.now();
+              settledAt.set(row, end);
+            }
+            elapsed = end - start;
+          }
+          const badge = badgeOf(row);
+          if (badge === null) return;
+          const text = formatElapsed(elapsed);
+          if (badgeText.get(badge) !== text) {
+            badge.textContent = text;
+            badgeText.set(badge, text);
+          }
+          if (live) badge.setAttribute('data-live', 'true');
+          else badge.removeAttribute('data-live');
+        }
+
+        /**
          * The disclosure root carries `data-open` exactly while it is open, which
          * is the one signal that does not depend on `expandable`: `aria-expanded`
          * is omitted entirely on a row that cannot open yet, so reading it alone
@@ -1411,6 +1512,7 @@ window.__ModuleLoader__.load({
           });
           const lastLeaf = leaves.length > 0 ? leaves[leaves.length - 1] : null;
           for (const { def, rows } of collected) {
+            if (def.timed) for (const row of rows) tickTimer(row);
             if (!def.foldable) continue;
             const override = config.modes[def.key];
             const blockMode = override === 'inherit' ? config.foldMode : override;
@@ -1433,7 +1535,7 @@ window.__ModuleLoader__.load({
           const style = document.createElement('style');
           style.id = STYLE_ID;
           const paint = () => {
-            style.textContent = `${cssText(config, activeScheme())}\n${SETTINGS_CSS}`;
+            style.textContent = `${cssText(config, activeScheme())}\n${TIMER_CSS}\n${SETTINGS_CSS}`;
           };
           paint();
           document.head.append(style);
