@@ -12,7 +12,7 @@
 
 **Thinking · Tools · Commands · Context injection — open while running, fold when done**
 
-> **Current version `1.4.0`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
+> **Current version `1.6.2`** · Verified on the **DSH `0.2.2-rc.3`** Web UI.
 > It does not take over rendering — it drives the upstream disclosure controls, so DSH upgrades usually need no plugin change.
 
 </div>
@@ -44,7 +44,10 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 - **🎨 Twelve configurable block types** — thinking, tools, command cards, context injection, compaction markers, process groups, turn tails, user bubbles, running status, queue, todos, steering messages.
 - **📐 Adjustable geometry** — accent bar width, corner radius, block/inline/left padding, running tint strength, font size, font family.
 - **⚡ Instant effect** — configuration lives in browser `localStorage`; no Host restart, no reinstall.
-- **🔍 Built-in diagnostics** — the settings page reports how many rows the plugin actually sees, how many are expandable, and how many are open.
+- **⏱️ Elapsed badges** — tool rows and command cards show their run time after the title, ticking while running and freezing when settled. Historical rows show nothing rather than a fabricated number.
+- **🕗 Configurable fold timing** — "on next row" (default) keeps a finished row open until the next process row arrives; "on end" folds it immediately. Whether the last process row folds when the turn ends in prose is a separate switch.
+- **📌 Bottom pinning** — when upstream throws the viewport upward mid-run (spacer reclaim, history trimming, a fold shrinking content), the plugin pulls it straight back. Only the wheel, touch, paging keys and scrollbar drags count as you taking over.
+- **🔍 Built-in diagnostics** — the settings page reports how many rows the plugin actually sees, how many are expandable, how many are open, whether the viewport is pinned, and how many times it was pulled back.
 
 ![Settings page](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/settings.png)
 
@@ -63,7 +66,7 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.4.0"
+    "@cstcood/dsh-live-process": "^1.6.2"
   }
 }
 ```
@@ -112,12 +115,12 @@ Open Settings → **Process block styles**.
 | Section | Contents |
 | --- | --- |
 | Palette | Follow UI / dark / light — decides which palette the sections below edit |
-| Fold rule | The four global modes, the fold timing and the last-row switch, always visible |
+| Fold rule | The four global modes, the fold timing, the last-row switch and the elapsed-badge switch, always visible |
 | Process blocks | Thinking, tools, command cards, context injection, compaction, process groups |
 | Other blocks | Turn tail, user bubble, running status, queue, todos, steering |
-| Common | Elapsed time, font family, running tint, bar width, radius, three paddings |
+| Common | Font family, running tint, bar width, radius, three paddings |
 | Preview | Live rendering of every enabled block in the current palette |
-| Diagnostics | Live row counts and plugin version |
+| Diagnostics | Live row counts, pin state, pull-back count and plugin version |
 
 Each block card carries a color dot with its hex value, an enable switch, a fold-mode pill, a color picker, a tint slider and a font size.
 
@@ -131,6 +134,7 @@ Under the `auto` mode, when a finished row folds is decided by two settings:
 | | On end | A row folds the moment it stops producing |
 | Fold the last row | Off (default) | The last process row has no successor, so it stays open |
 | | On | It folds even when nothing follows it |
+| Show elapsed | On (default) | Tool rows and command cards carry a run-time badge after the title |
 
 "Last row" means a turn that ends with assistant prose: no process row will ever follow, so `on next row` would wait forever. That is why it gets its own switch.
 

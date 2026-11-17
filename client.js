@@ -1064,6 +1064,27 @@ window.__ModuleLoader__.load({
                 },
               }),
             ),
+            h(
+              'div',
+              { className: 'dte-row' },
+              h(
+                'div',
+                { className: 'dte-row-main' },
+                h('span', { className: 'dte-row-label' }, '显示耗时'),
+                h(
+                  'span',
+                  { className: 'dte-row-hint' },
+                  '工具行与命令卡的标题后显示运行时长，运行中实时递增，结束后定格。',
+                ),
+              ),
+              h(Switch, {
+                checked: current.showTimer,
+                title: '显示耗时',
+                onChange: value => {
+                  update({ showTimer: value });
+                },
+              }),
+            ),
           ),
         ),
         h(
@@ -1105,24 +1126,7 @@ window.__ModuleLoader__.load({
         ),
         h(
           Group,
-          { title: '通用', badge: schemeLabel, count: 7, defaultOpen: false },
-          h(
-            Row,
-            null,
-            h(
-              'div',
-              { className: 'dte-row-main' },
-              h('span', { className: 'dte-row-label' }, '显示耗时'),
-              h('span', { className: 'dte-row-hint' }, '在工具行与命令卡标题后显示运行时长，运行中实时递增。'),
-            ),
-            h(Switch, {
-              checked: current.showTimer,
-              title: '显示耗时',
-              onChange: value => {
-                update({ showTimer: value });
-              },
-            }),
-          ),
+          { title: '通用', badge: schemeLabel, count: 6, defaultOpen: false },
           h(
             Row,
             null,
