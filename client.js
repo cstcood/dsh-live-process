@@ -15,7 +15,7 @@
  * preference, it applies without a Host restart, and it survives reloads.
  */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-think-expand',
+  id: '@cstcood/dsh-live-process',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
@@ -24,7 +24,7 @@ window.__ModuleLoader__.load({
     const MAX_ATTEMPTS = 4;
     const VERSION = '1.4.0';
     const STYLE_ID = 'dsh-live-process-blocks';
-    const STORE_KEY = 'dsh-think-expand:config';
+    const STORE_KEY = 'dsh-live-process:config';
     const MARK = 'data-dsh-block';
 
     const FOLD_MODES = [
@@ -1348,7 +1348,7 @@ window.__ModuleLoader__.load({
             timers.clear();
             style.remove();
           };
-        }, 'think-expand: block styles and disclosure driver');
+        }, 'live-process: block styles and disclosure driver');
 
         ctx.effect(
           () =>
@@ -1356,14 +1356,14 @@ window.__ModuleLoader__.load({
               ctx.slots.register(
                 {
                   name: 'settings.section',
-                  id: 'think-expand',
+                  id: 'live-process',
                   order: 60,
                   label: () => '过程块样式',
                 },
                 Page,
               ),
             ),
-          'think-expand: settings page',
+          'live-process: settings page',
         );
       },
     };

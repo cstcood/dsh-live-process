@@ -2,9 +2,9 @@
 
 <div align="center">
 
-<img src="icon.svg" width="76" alt="DSH Think Expand">
+<img src="icon.svg" width="76" alt="DSH Live Process">
 
-# DSH Think Expand
+# DSH Live Process
 
 ### 让过程在产生的那一刻就摊开
 
@@ -31,9 +31,9 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 
 > 顺带说一句：DSH 上游明确不打算让扩展替换思考预览与展开策略（`dsh-client-ui-chat/README.zh.md`：「扩展不替换思考预览或展开策略。」）。所以这里没有走「改渲染」的路，而是驱动上游自己的展开控件——见[工作原理](#-工作原理)。
 
-![暗色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-dark.png)
+![暗色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/transcript-dark.png)
 
-![浅色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-light.png)
+![浅色主题下的过程块](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/transcript-light.png)
 
 ## ✨ 特性
 
@@ -46,7 +46,7 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 - **⚡ 改动立即生效** — 配置存在浏览器 `localStorage`，不用重启 Host，不用重装插件。
 - **🔍 内置诊断** — 设置页底部实时显示插件在页面上实际看到的行数、可展开数、已展开数，出问题时不用猜。
 
-![设置页](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/settings.png)
+![设置页](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/settings.png)
 
 ## 📦 安装
 
@@ -55,7 +55,7 @@ DSH 默认把过程行收成一行摘要，运行中你也只能看到「正在�
 ### 从 npm 安装（推荐）
 
 ```text
-plugin_manager install_bundle target=@cstcood/dsh-think-expand
+plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```
 
 或手动写进 profile 的 `package.json`：
@@ -63,12 +63,12 @@ plugin_manager install_bundle target=@cstcood/dsh-think-expand
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-think-expand": "^1.4.0"
+    "@cstcood/dsh-live-process": "^1.4.0"
   }
 }
 ```
 
-然后在 `dsh.profile.bundles` 末尾追加 `"@cstcood/dsh-think-expand"`，重启 DSH。
+然后在 `dsh.profile.bundles` 末尾追加 `"@cstcood/dsh-live-process"`，重启 DSH。
 
 ### 从本地目录安装
 
@@ -80,18 +80,18 @@ plugin_manager install_bundle target=<本仓库的绝对路径>
 
 ### 手动安装
 
-1. 把仓库放到任意目录，例如 `~/dsh-plugins/dsh-think-expand`。
+1. 把仓库放到任意目录，例如 `~/dsh-plugins/dsh-live-process`。
 2. 在 profile 的 `package.json` 里加依赖：
 
    ```json
    {
      "dependencies": {
-       "@local/dsh-think-expand": "link:~/dsh-plugins/dsh-think-expand"
+       "@local/dsh-live-process": "link:~/dsh-plugins/dsh-live-process"
      }
    }
    ```
 
-3. 在 `dsh.profile.bundles` 末尾追加 `"@local/dsh-think-expand"`。
+3. 在 `dsh.profile.bundles` 末尾追加 `"@local/dsh-live-process"`。
 4. 重启 DSH。
 
 ### 重载
@@ -99,8 +99,8 @@ plugin_manager install_bundle target=<本仓库的绝对路径>
 改完 `client.js` 后，浏览器端模块不会自动热更新（除非同时跑着 `pnpm run dev:web`）。重载方式：
 
 ```text
-plugin_manager set_plugin target=include:dsh-think-expand enabled=false
-plugin_manager set_plugin target=include:dsh-think-expand enabled=true
+plugin_manager set_plugin target=include:dsh-live-process enabled=false
+plugin_manager set_plugin target=include:dsh-live-process enabled=true
 ```
 
 然后**刷新页面**。
@@ -123,7 +123,7 @@ plugin_manager set_plugin target=include:dsh-think-expand enabled=true
 
 ## ⚙️ 配置结构
 
-`localStorage` 键：`dsh-think-expand:config`
+`localStorage` 键：`dsh-live-process:config`
 
 ```jsonc
 {

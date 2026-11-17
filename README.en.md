@@ -2,9 +2,9 @@
 
 <div align="center">
 
-<img src="icon.svg" width="76" alt="DSH Think Expand">
+<img src="icon.svg" width="76" alt="DSH Live Process">
 
-# DSH Think Expand
+# DSH Live Process
 
 ### Unfold the process the moment it happens
 
@@ -31,9 +31,9 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 
 > One caveat: upstream DSH deliberately does not let extensions replace the reasoning preview or the expand strategy (`dsh-client-ui-chat/README.zh.md`). So this plugin does not take over rendering — it drives upstream's own disclosure controls. See [How it works](#-how-it-works).
 
-![Process blocks in the dark theme](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-dark.png)
+![Process blocks in the dark theme](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/transcript-dark.png)
 
-![Process blocks in the light theme](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/transcript-light.png)
+![Process blocks in the light theme](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/transcript-light.png)
 
 ## ✨ Features
 
@@ -46,7 +46,7 @@ So this is not "a toggle for DSH". It is **unfolding the process the way pi-web 
 - **⚡ Instant effect** — configuration lives in browser `localStorage`; no Host restart, no reinstall.
 - **🔍 Built-in diagnostics** — the settings page reports how many rows the plugin actually sees, how many are expandable, and how many are open.
 
-![Settings page](https://raw.githubusercontent.com/cstcood/dsh-think-expand/main/docs/screenshots/settings.png)
+![Settings page](https://raw.githubusercontent.com/cstcood/dsh-live-process/main/docs/screenshots/settings.png)
 
 ## 📦 Install
 
@@ -55,7 +55,7 @@ The plugin ships as a DSH bundle and requires the DSH Web UI (`dsh.client.platfo
 ### From npm (recommended)
 
 ```text
-plugin_manager install_bundle target=@cstcood/dsh-think-expand
+plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```
 
 Or add it to the profile `package.json` by hand:
@@ -63,12 +63,12 @@ Or add it to the profile `package.json` by hand:
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-think-expand": "^1.4.0"
+    "@cstcood/dsh-live-process": "^1.4.0"
   }
 }
 ```
 
-Then append `"@cstcood/dsh-think-expand"` to `dsh.profile.bundles` and restart DSH.
+Then append `"@cstcood/dsh-live-process"` to `dsh.profile.bundles` and restart DSH.
 
 ### From a local directory
 
@@ -80,18 +80,18 @@ The profile `package.json` gains a `link:` dependency and `dsh.profile.bundles` 
 
 ### Manually
 
-1. Put the repo anywhere, e.g. `~/dsh-plugins/dsh-think-expand`.
+1. Put the repo anywhere, e.g. `~/dsh-plugins/dsh-live-process`.
 2. Add the dependency to the profile `package.json`:
 
    ```json
    {
      "dependencies": {
-       "@local/dsh-think-expand": "link:~/dsh-plugins/dsh-think-expand"
+       "@local/dsh-live-process": "link:~/dsh-plugins/dsh-live-process"
      }
    }
    ```
 
-3. Append `"@local/dsh-think-expand"` to `dsh.profile.bundles`.
+3. Append `"@local/dsh-live-process"` to `dsh.profile.bundles`.
 4. Restart DSH.
 
 ### Reload
@@ -99,8 +99,8 @@ The profile `package.json` gains a `link:` dependency and `dsh.profile.bundles` 
 Browser modules do not hot-reload after editing `client.js` (unless `pnpm run dev:web` is also running):
 
 ```text
-plugin_manager set_plugin target=include:dsh-think-expand enabled=false
-plugin_manager set_plugin target=include:dsh-think-expand enabled=true
+plugin_manager set_plugin target=include:dsh-live-process enabled=false
+plugin_manager set_plugin target=include:dsh-live-process enabled=true
 ```
 
 Then **refresh the page**.
@@ -123,7 +123,7 @@ Each block card carries a color dot with its hex value, an enable switch, a fold
 
 ## ⚙️ Configuration
 
-`localStorage` key: `dsh-think-expand:config`
+`localStorage` key: `dsh-live-process:config`
 
 ```jsonc
 {

@@ -1,17 +1,17 @@
 {
-  "name": "@cstcood/dsh-think-expand",
+  "name": "@cstcood/dsh-live-process",
   "version": "1.4.0",
   "type": "module",
   "description": "Live-process blocks for the Chat transcript: reasoning and tool rows open while running, fold when settled, and carry configurable block styling from a Settings page.",
   "license": "MIT",
   "author": "cstcood",
-  "homepage": "https://github.com/cstcood/dsh-think-expand#readme",
+  "homepage": "https://github.com/cstcood/dsh-live-process#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cstcood/dsh-think-expand.git"
+    "url": "git+https://github.com/cstcood/dsh-live-process.git"
   },
   "bugs": {
-    "url": "https://github.com/cstcood/dsh-think-expand/issues"
+    "url": "https://github.com/cstcood/dsh-live-process/issues"
   },
   "keywords": [
     "dsh",
