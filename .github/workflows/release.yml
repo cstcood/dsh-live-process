@@ -61,12 +61,21 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes-file "$RUNNER_TEMP/notes.md" \
-            --verify-tag
+          # Idempotent: a forced re-run must not die on an existing tag or release.
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::notice::$TAG already exists locally; reusing it"
+          else
+            git tag -a "$TAG" -m "$TAG"
+            git push origin "$TAG"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::release $TAG already exists; leaving it alone"
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file "$RUNNER_TEMP/notes.md" \
+              --verify-tag
+          fi
 
       - name: Publish to npm
         if: (steps.meta.outputs.exists == 'false' || inputs.force) && env.NODE_AUTH_TOKEN != ''
