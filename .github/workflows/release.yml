@@ -35,18 +35,38 @@ jobs:
       - name: Use a npm that speaks OIDC
         run: npm install -g npm@latest
 
-      - name: Read version and tag state
+      - name: Read version and publish state
         id: meta
         run: |
+          name="$(node -p "require('./package.json').name")"
           version="$(node -p "require('./package.json').version")"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+          tagged=false
           if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            tagged=true
+          fi
+
+          # The pre-push hook tags before this workflow ever runs, so a tag on its
+          # own does not mean the version shipped. Ask the registry instead: only a
+          # version that is actually on npm can be skipped. This also heals a
+          # half-published release (tagged, but the publish step failed).
+          published=false
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            published=true
+          fi
+
+          echo "tagged=$tagged" >> "$GITHUB_OUTPUT"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+          if [ "$tagged" = true ] && [ "$published" = true ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::v$version already tagged; skipping release"
+            echo "::notice::v$version is tagged and already on npm; nothing to publish"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::v$version is new; release will be created"
+            echo "::notice::v$version tagged=$tagged published=$published; release will run"
           fi
 
       - name: Verify the client module parses
