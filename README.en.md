@@ -236,38 +236,6 @@ python docs/make-shots.py
 
 `client.js` is the browser module, registered through `window.__ModuleLoader__.load({ id, factory })`. `index.js` is the Host entry point; this plugin needs no Host-side logic, so `apply()` is empty.
 
-### Releasing
-
-A push to `main` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml):
-
-1. read `version` from `package.json`;
-2. if the remote has no `v<version>` tag yet, take that version's section from `CHANGELOG.md` as the release notes, create the tag and the GitHub release;
-3. publish with **npm Trusted Publishing**: the job holds `id-token: write` and trades it for a short-lived credential at publish time, so no token lives in this repository.
-
-So a release is three edits — `VERSION` in `client.js`, `version` in `package.json`, and a new `CHANGELOG.md` section — then commit and push. If the version did not change the whole flow short-circuits, so an empty commit never mints a second release.
-
-Three things that bite:
-
-- On npm, register `cstcood/dsh-live-process` with workflow filename `release.yml` under the package's **Settings → Trusted publishing**, leaving the environment field empty.
-- `setup-node` writes an `_authToken=${NODE_AUTH_TOKEN}` line into `.npmrc`. That line has to go, or npm authenticates with an empty token and fails as `ENEEDAUTH` / `EOTP` before OIDC is ever attempted. That is what the "Drop the token placeholder" step does.
-- The npm bundled with Node 22 is too old to speak OIDC, so it reinstalls `npm@latest` first.
-
-You can also run it by hand:
-
-```bash
-gh workflow run release.yml -f force=true
-```
-
-### Local releasing without Actions
-
-When GitHub Actions is blocked by account billing, the same flow runs from a local hook:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-From then on a `git push` to `main` runs [`.githooks/pre-push`](.githooks/pre-push): it does nothing when the version did not change, and otherwise reads `CHANGELOG.md`, tags `v<version>` and creates the release. **The npm half is left to Actions** — a local machine has no OIDC identity to trade. Skip one push with `SKIP_RELEASE_HOOK=1 git push`; to really publish here, `LOCAL_RELEASE=1 git push` goes through npm's browser confirmation instead.
-
 ## 📄 License
 
 [MIT](LICENSE) © 2026 cstcood
