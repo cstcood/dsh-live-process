@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.4
+
+- 移除临时诊断上行链路：客户端此前每 400ms 向 `http://127.0.0.1:8899/probe` POST 一次行状态快照，并每 15s 拉一次 `/timers`。这两个请求只服务于作者本机的一个调试 sink，任何没起该服务的环境都会在网络面板里持续刷 `ERR_CONNECTION_REFUSED`——`.catch()` 只压住了控制台报错，压不住请求记录本身。
+- 一并去掉 `probe()`、`refreshSeed()` 及其定时器与清理调用。插件亲眼看到的调用仍有耗时徽章；只有「插件启动前就已结束的调用」的耗时回填没有了，那部分原本也依赖同一个本地 sink。
+
 ## 1.7.3
 
 - 同时发布到 GitHub Packages：workflow 在 npm 官方源发布之后，用同一个 `GITHUB_TOKEN` 再发一份到 `npm.pkg.github.com`，两个渠道内容完全一致。因为 `publishConfig.registry` 会覆盖命令行的 `--registry`，这一步临时改掉该字段、发布完立刻还原，仓库里存的仍然是 npm 官方源。
