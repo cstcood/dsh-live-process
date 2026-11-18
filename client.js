@@ -1927,59 +1927,6 @@ window.__ModuleLoader__.load({
           primed = true;
           // Streaming grows the tail every frame; keep a pinned reader on it.
           pinToBottom(document.querySelector('[data-conversation-scroll]'));
-          probe();
-        }
-
-        // TEMPORARY diagnostic uplink: the GUI has no debugging port, so the live
-        // row state is posted to a local sink and read back from disk.
-        let probeAt = 0;
-        function probe() {
-          if (Date.now() - probeAt < 300) return;
-          probeAt = Date.now();
-          try {
-            const rows = [...document.querySelectorAll('[data-dsh-block]')];
-            const payload = {
-              v: VERSION,
-              at: Date.now(),
-              rows: rows.map(row => {
-                const header = row.querySelector('[data-disclosure-header]');
-                const root = header === null ? null : header.parentElement;
-                const ctl = control(row);
-                const badge = header === null ? null : header.querySelector(':scope > .dte-timer');
-                return {
-                  block: row.getAttribute('data-dsh-block'),
-                  tool: row.getAttribute('data-tool'),
-                  state: row.getAttribute('data-state'),
-                  anchor: anchorOf(row),
-                  open: root !== null && root.hasAttribute('data-open'),
-                  hasRow: row.querySelector('[data-disclosure-row]') !== null,
-                  hasAria: row.querySelector('[data-disclosure-row][aria-expanded]') !== null,
-                  ctl: ctl !== null,
-                  timer: badge === null ? null : badge.textContent,
-                  bg: getComputedStyle(row).backgroundColor,
-                  rootBg: root === null ? null : getComputedStyle(root).backgroundColor,
-                  headerBg: header === null ? null : getComputedStyle(header).backgroundColor,
-                  parentBg: row.parentElement === null
-                    ? null
-                    : getComputedStyle(row.parentElement).backgroundColor,
-                  bodyBg: root === null || root.lastElementChild === null
-                    ? null
-                    : getComputedStyle(root.lastElementChild).backgroundColor,
-                  box: (() => {
-                    const rect = row.getBoundingClientRect();
-                    return `${Math.round(rect.left)}/${Math.round(rect.width)}`;
-                  })(),
-                };
-              }),
-            };
-            fetch('http://127.0.0.1:8899/probe', {
-              method: 'POST',
-              mode: 'no-cors',
-              body: JSON.stringify(payload),
-            }).catch(() => {});
-          } catch {
-            // The probe must never disturb the page.
-          }
         }
 
         function schedule() {
@@ -2018,39 +1965,6 @@ window.__ModuleLoader__.load({
 
           schedule();
 
-          // Backfill: a call that finished before this plugin was watching has no
-          // observable window, but its timestamps survive in the session log. The
-          // local sink rebuilds the table on every request, so polling it keeps the
-          // newest calls covered too. Without it the plugin works exactly as
-          // before, so the request is allowed to fail silently.
-          const refreshSeed = () => {
-            fetch('http://127.0.0.1:8899/timers')
-              .then(response => (response.ok ? response.json() : null))
-              .then(data => {
-                if (data === null || typeof data !== 'object') return;
-                let added = 0;
-                for (const [key, value] of Object.entries(data)) {
-                  if (!Array.isArray(value) || typeof value[0] !== 'number') continue;
-                  // The session log is the authority: its timestamps are what the
-                  // scheduler actually measured, so they replace anything this
-                  // plugin guessed by watching the DOM.
-                  const next = { start: value[0], end: typeof value[1] === 'number' ? value[1] : null };
-                  const held = timerStore.get(key);
-                  if (held !== undefined && held.start === next.start && held.end === next.end) continue;
-                  timerStore.set(key, next);
-                  added += 1;
-                }
-                if (added > 0) {
-                  saveTimers();
-                  schedule();
-                }
-              })
-              .catch(() => {});
-          };
-          refreshSeed();
-          const seedTick = setInterval(refreshSeed, 15000);
-          const probeTick = setInterval(probe, 400);
-
           // A context row's live window expires on a clock rather than on a DOM
           // change, so poll while the transcript is otherwise idle to let the
           // row fold itself once the window closes.
@@ -2061,8 +1975,6 @@ window.__ModuleLoader__.load({
             observer.disconnect();
             themeObserver.disconnect();
             clearInterval(tick);
-            clearInterval(seedTick);
-            clearInterval(probeTick);
             if (frame !== 0) cancelAnimationFrame(frame);
             frame = 0;
             for (const timer of timers) clearTimeout(timer);
