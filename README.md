@@ -12,7 +12,7 @@
 
 **思考 · 工具 · 命令 · 上下文注入 —— 运行中展开，结束后折叠**
 
-> **当前版本 `1.7.4`** · 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。
+> 已在 **DSH `0.2.2-rc.3`** 的 Web 界面上验证可用。当前版本见上方 npm 徽章。
 > 不接管渲染，只驱动上游自己的展开控件——所以升级 DSH 后通常无需改插件。
 
 </div>
@@ -69,7 +69,7 @@ plugin_manager install_bundle target=@cstcood/dsh-live-process
 ```json
 {
   "dependencies": {
-    "@cstcood/dsh-live-process": "^1.7.4"
+    "@cstcood/dsh-live-process": "^1.7.5"
   }
 }
 ```

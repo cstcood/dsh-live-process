@@ -1,6 +1,6 @@
 {
   "name": "@cstcood/dsh-live-process",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "type": "module",
   "description": "Live-process blocks for the Chat transcript: reasoning and tool rows open while running, fold when settled, and carry configurable block styling from a Settings page.",
   "license": "MIT",
@@ -38,11 +38,16 @@
     "registry": "https://registry.npmjs.org"
   },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
-      "inject": ["@deepseek-ai/dsh-client-ui-chat", "@deepseek-ai/dsh-client-ui-settings"]
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-chat",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
     }
   }
 }
